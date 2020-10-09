@@ -49,7 +49,6 @@ pub use crate::types::{Color, EcLevel, QrResult, Version};
 
 use crate::cast::As;
 use crate::render::{Pixel, Renderer};
-use checked_int_cast::CheckedIntCast;
 
 /// The encoded QR code symbol.
 #[derive(Clone)]
@@ -186,8 +185,8 @@ impl QrCode {
     /// Checks whether a module at coordinate (x, y) is a functional module or
     /// not.
     pub fn is_functional(&self, x: usize, y: usize) -> bool {
-        let x = x.as_i16_checked().expect("coordinate is too large for QR code");
-        let y = y.as_i16_checked().expect("coordinate is too large for QR code");
+        let x = x.as_i16();
+        let y = y.as_i16();
         canvas::is_functional(self.version, self.version.width(), x, y)
     }
 

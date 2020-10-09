@@ -15,7 +15,6 @@ exclude = [
 
 [dependencies]
 image = { version = "0.23", default-features = false, optional = true }  # remove use bmp-monochrome
-checked_int_cast = "1"  # remove rust 1.34 support try_from
 
 [dev-dependencies]
 image = "0.23"  # remove
