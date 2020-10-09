@@ -1,4 +1,4 @@
-use qrcode::QrCode;
+use qr_code::QrCode;
 
 fn main() {
     let code = QrCode::new(b"Hello").unwrap();

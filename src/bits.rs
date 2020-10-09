@@ -13,6 +13,7 @@ use crate::types::{EcLevel, Mode, QrError, QrResult, Version};
 //{{{ Bits
 
 /// The `Bits` structure stores the encoded data for a QR code.
+#[derive(Clone)]
 pub struct Bits {
     data: Vec<u8>,
     bit_offset: usize,
@@ -225,8 +226,8 @@ impl Bits {
     ///
     ///     #![allow(unused_must_use)]
     ///
-    ///     use qrcode::bits::Bits;
-    ///     use qrcode::types::Version;
+    ///     use qr_code::bits::Bits;
+    ///     use qr_code::types::Version;
     ///
     ///     let mut bits = Bits::new(Version::Normal(1));
     ///     bits.push_eci_designator(9); // 9 = ISO-8859-7 (Greek).
@@ -603,8 +604,8 @@ impl Bits {
     ///
     ///     #![allow(unused_must_use)]
     ///
-    ///     use qrcode::bits::Bits;
-    ///     use qrcode::types::Version;
+    ///     use qr_code::bits::Bits;
+    ///     use qr_code::types::Version;
     ///
     ///     let mut bits = Bits::new(Version::Normal(1));
     ///     bits.push_fnc1_first_position();
@@ -627,8 +628,8 @@ impl Bits {
     ///
     ///     #![allow(unused_must_use)]
     ///
-    ///     use qrcode::bits::Bits;
-    ///     use qrcode::types::Version;
+    ///     use qr_code::bits::Bits;
+    ///     use qr_code::types::Version;
     ///
     ///     let mut bits = Bits::new(Version::Normal(1));
     ///     bits.push_fnc1_second_position(37);

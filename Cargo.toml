@@ -1,31 +1,24 @@
 [package]
-name = "qrcode"
-description = "QR code encoder in Rust"
+name = "qr_code"
+description = "QR code encoder in Rust, support structured append (data in multiple qrcodes)"
 license = "MIT OR Apache-2.0"
-version = "0.12.0"
+version = "0.1.0"
 edition = "2018"
-authors = ["kennytm <kennytm@gmail.com>"]
+authors = ["kennytm <kennytm@gmail.com>", "Riccardo Casatta <riccardo.casatta@gmail.com>"]
 keywords = ["qrcode"]
-repository = "https://github.com/kennytm/qrcode-rust"
+repository = "https://github.com/RCasatta/qr_code"
 readme = "README.md"
-documentation = "http://docs.rs/qrcode"
+documentation = "http://docs.rs/qr_code"
 exclude = [
     ".travis.yml", ".gitignore", "test-data/**"
 ]
 
-[badges]
-travis-ci = { repository = "kennytm/qrcode-rust" }
-coveralls = { repository = "kennytm/qrcode-rust" }
-is-it-maintained-issue-resolution = { repository = "kennytm/qrcode-rust" }
-is-it-maintained-open-issues = { repository = "kennytm/qrcode-rust" }
-maintenance = { status = "passively-maintained" }
-
 [dependencies]
-image = { version = "0.23", default-features = false, optional = true }
-checked_int_cast = "1"
+image = { version = "0.23", default-features = false, optional = true }  # remove use bmp-monochrome
+checked_int_cast = "1"  # remove rust 1.34 support try_from
 
 [dev-dependencies]
-image = "0.23"
+image = "0.23"  # remove
 
 [features]
 default = ["image", "svg"]

@@ -3,8 +3,8 @@
 //! # Example
 //!
 //! ```
-//! use qrcode::QrCode;
-//! use qrcode::render::svg;
+//! use qr_code::QrCode;
+//! use qr_code::render::svg;
 //!
 //! let code = QrCode::new(b"Hello").unwrap();
 //! let svg_xml = code.render::<svg::Color>().build();
