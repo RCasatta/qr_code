@@ -11,40 +11,46 @@ Example
 
 ## Bmp image  generation
 
-// TODO
+requires `bmp` feature
+
+```rust
+let qr_code = qr_code::QrCode::new(b"Hello").unwrap();
+let bmp = qr_code.to_matrix();
+bmp.write(std::fs::File::create("test.bmp").unwrap()).unwrap();
+```
+
+Generate this image:
+
+![test](https://raw.githubusercontent.com/RCasatta/qr_code/master/test.bmp)
+
+Looks small?
+
+Many context supports rescaling mode specific for pixelated images, for example in html `image-rendering: pixelated;`
+
+As an alternative see method `Bmp::mul` and `Bmp::add_whitespace`
+
 
 ## Unicode string generation
 
 ```rust
-use qr_code::QrCode;
-use qr_code::render::unicode;
-
-fn main() {
-    let code = QrCode::new("mow mow").unwrap();
-    let image = code.render::<unicode::Dense1x2>()
-        .dark_color(unicode::Dense1x2::Light)
-        .light_color(unicode::Dense1x2::Dark)
-        .build();
-    println!("{}", image);
-}
+let qr_code = qr_code::QrCode::new(b"Hello").unwrap();
+println!("{}", qr_code.to_string(false));
 ```
 
 Generates this output:
 
 ```text
-█████████████████████████████
-█████████████████████████████
-████ ▄▄▄▄▄ █ ▀▀▀▄█ ▄▄▄▄▄ ████
-████ █   █ █▀ ▀ ▀█ █   █ ████
-████ █▄▄▄█ ██▄  ▀█ █▄▄▄█ ████
-████▄▄▄▄▄▄▄█ ▀▄▀ █▄▄▄▄▄▄▄████
-████▄▀ ▄▀ ▄ █▄█  ▀ ▀█ █▄ ████
-████▄██▄▄▀▄▄▀█▄ ██▀▀█▀▄▄▄████
-█████▄▄▄█▄▄█  ▀▀▄█▀▀▀▄█▄▄████
-████ ▄▄▄▄▄ █   ▄▄██▄ ▄ ▀▀████
-████ █   █ █▀▄▄▀▄▄ ▄▄▄▄ ▄████
-████ █▄▄▄█ █▄  █▄▀▄▀██▄█▀████
-████▄▄▄▄▄▄▄█▄████▄█▄██▄██████
-█████████████████████████████
-▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+
+   █▀▀▀▀▀█  ▀▀▀█ █▀▀▀▀▀█
+   █ ███ █ █ █ ▀ █ ███ █
+   █ ▀▀▀ █ ██ ▄▀ █ ▀▀▀ █
+   ▀▀▀▀▀▀▀ █ █ ▀ ▀▀▀▀▀▀▀
+   ▀ ▀█▀▀▀ ▄▀ █▄▄█▀▀██ ▄
+     █▀▀█▀▄▄▀█▄█▄█▀ ██▀ 
+    ▀▀▀  ▀▀█▀▀ █  █ ▄  ▀
+   █▀▀▀▀▀█ ▄▀▄▀ ▀ ▄█▄██ 
+   █ ███ █ █▄ █▄█▄▄▀▄ ▀ 
+   █ ▀▀▀ █ ▀█ ▄█▄█▀▄▄█  
+   ▀▀▀▀▀▀▀ ▀▀  ▀   ▀  ▀ 
+
 ```

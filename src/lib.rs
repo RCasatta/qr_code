@@ -1,17 +1,9 @@
+//!
 //! QRCode encoder
 //!
 //! This crate provides a QR code and Micro QR code encoder for binary data.
 //!
-//! use qr_code::QrCode;
-//!
-//! let string = code.render()
-//!     .light_color(' ')
-//!     .dark_color('#')
-//!     .build();
-//! println!("{}", string);
-//! ```
 
-#![cfg_attr(feature = "bench", feature(test, external_doc))] // Unstable libraries
 #![deny(warnings)]
 #![allow(
     clippy::must_use_candidate, // This is just annoying.
@@ -28,6 +20,7 @@ pub mod canvas;
 mod cast;
 pub mod ec;
 pub mod optimize;
+mod render;
 pub mod types;
 
 pub use crate::types::{Color, EcLevel, QrResult, Version};
