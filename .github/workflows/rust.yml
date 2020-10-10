@@ -1,0 +1,53 @@
+name: bmp-monochrome
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  cosmetics:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+          components: rustfmt, clippy
+      - name: fmt
+        run: cargo fmt -- --check
+      - name: clippy
+        run: cargo clippy -- -D warnings
+
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        rust: [stable, nightly, 1.32.0]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args:  --verbose --all
+      - uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args:  --example encode_image
+      - uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args:  --example encode_string
+      - uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args:  --example encode_svg
