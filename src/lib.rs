@@ -13,6 +13,10 @@
 #![cfg_attr(feature = "bench", doc(include = "../README.md"))]
 // ^ make sure we can test our README.md.
 
+// Re-exported dependencies.
+#[cfg(feature = "bmp")]
+pub extern crate bmp_monochrome;
+
 use std::ops::Index;
 
 pub mod bits;
