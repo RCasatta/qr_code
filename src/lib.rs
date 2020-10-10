@@ -20,7 +20,7 @@ pub mod canvas;
 mod cast;
 pub mod ec;
 pub mod optimize;
-mod render;
+pub mod render;
 pub mod types;
 
 pub use crate::types::{Color, EcLevel, QrResult, Version};
