@@ -14,14 +14,12 @@ exclude = [
 ]
 
 [dependencies]
-bmp-monochrome = "0.9.0"
 
 [dev-dependencies]
-
-[features]
-
-[[bin]]
-name = "qr_encode"
+bmp-monochrome = "0.9.0"
 
 [[example]]
 name = "encode_string"
+
+[[example]]
+name = "encode_bmp"

@@ -28,13 +28,11 @@ pub mod canvas;
 mod cast;
 pub mod ec;
 pub mod optimize;
-pub mod render;
 pub mod types;
 
 pub use crate::types::{Color, EcLevel, QrResult, Version};
 
 use crate::cast::As;
-use crate::render::{Pixel, Renderer};
 
 /// The encoded QR code symbol.
 #[derive(Clone)]
@@ -188,16 +186,6 @@ impl QrCode {
         canvas::is_functional(self.version, self.version.width(), x, y)
     }
 
-    /// Converts the QR code into a human-readable string. This is mainly for
-    /// debugging only.
-    pub fn to_debug_str(&self, on_char: char, off_char: char) -> String {
-        self.render()
-            .quiet_zone(false)
-            .dark_color(on_char)
-            .light_color(off_char)
-            .build()
-    }
-
     /// Converts the QR code to a vector of booleans. Each entry represents the
     /// color of the module, with "true" means dark and "false" means light.
     #[deprecated(since = "0.4.0", note = "use `to_colors()` instead")]
@@ -224,17 +212,6 @@ impl QrCode {
     pub fn into_colors(self) -> Vec<Color> {
         self.content
     }
-
-    /// Renders the QR code into an image. The result is an image builder, which
-    /// you may do some additional configuration before copying it into a
-    /// concrete image.
-    ///
-    /// Note: the `image` crate itself also provides method to rotate the image,
-    /// or overlay a logo on top of the QR code.
-    pub fn render<P: Pixel>(&self) -> Renderer<P> {
-        let quiet_zone = if self.version.is_micro() { 2 } else { 4 };
-        Renderer::new(&self.content, self.width, quiet_zone)
-    }
 }
 
 impl Index<(usize, usize)> for QrCode {
@@ -243,63 +220,5 @@ impl Index<(usize, usize)> for QrCode {
     fn index(&self, (x, y): (usize, usize)) -> &Color {
         let index = y * self.width + x;
         &self.content[index]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{EcLevel, QrCode, Version};
-
-    #[test]
-    fn test_annex_i_qr() {
-        // This uses the ISO Annex I as test vector.
-        let code = QrCode::with_version(b"01234567", Version::Normal(1), EcLevel::M).unwrap();
-        assert_eq!(
-            &*code.to_debug_str('#', '.'),
-            "\
-             #######..#.##.#######\n\
-             #.....#..####.#.....#\n\
-             #.###.#.#.....#.###.#\n\
-             #.###.#.##....#.###.#\n\
-             #.###.#.#.###.#.###.#\n\
-             #.....#.#...#.#.....#\n\
-             #######.#.#.#.#######\n\
-             ........#..##........\n\
-             #.#####..#..#.#####..\n\
-             ...#.#.##.#.#..#.##..\n\
-             ..#...##.#.#.#..#####\n\
-             ....#....#.....####..\n\
-             ...######..#.#..#....\n\
-             ........#.#####..##..\n\
-             #######..##.#.##.....\n\
-             #.....#.#.#####...#.#\n\
-             #.###.#.#...#..#.##..\n\
-             #.###.#.##..#..#.....\n\
-             #.###.#.#.##.#..#.#..\n\
-             #.....#........##.##.\n\
-             #######.####.#..#.#.."
-        );
-    }
-
-    #[test]
-    fn test_annex_i_micro_qr() {
-        let code = QrCode::with_version(b"01234567", Version::Micro(2), EcLevel::L).unwrap();
-        assert_eq!(
-            &*code.to_debug_str('#', '.'),
-            "\
-             #######.#.#.#\n\
-             #.....#.###.#\n\
-             #.###.#..##.#\n\
-             #.###.#..####\n\
-             #.###.#.###..\n\
-             #.....#.#...#\n\
-             #######..####\n\
-             .........##..\n\
-             ##.#....#...#\n\
-             .##.#.#.#.#.#\n\
-             ###..#######.\n\
-             ...#.#....##.\n\
-             ###.#..##.###"
-        );
     }
 }
