@@ -15,7 +15,7 @@ requires `bmp` feature
 
 ```rust
 let qr_code = qr_code::QrCode::new(b"Hello").unwrap();
-let bmp = qr_code.to_matrix();
+let bmp = qr_code.to_bmp();
 bmp.write(std::fs::File::create("test.bmp").unwrap()).unwrap();
 ```
 
@@ -37,7 +37,7 @@ let qr_code = qr_code::QrCode::new(b"Hello").unwrap();
 println!("{}", qr_code.to_string(false));
 ```
 
-Generates this output:
+Generates this output (looks better in terminal):
 
 ```text
 

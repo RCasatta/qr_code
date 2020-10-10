@@ -2,9 +2,6 @@
 use crate::types::{Mode, Version};
 use std::slice::Iter;
 
-#[cfg(feature = "bench")]
-extern crate test;
-
 //------------------------------------------------------------------------------
 //{{{ Segment
 

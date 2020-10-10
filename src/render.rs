@@ -36,7 +36,7 @@ impl QrCode {
     }
 
     #[cfg(feature = "bmp")]
-    pub fn to_matrix(self) -> bmp_monochrome::Bmp {
+    pub fn to_bmp(self) -> bmp_monochrome::Bmp {
         let width = self.width();
         let data = self
             .to_colors()
