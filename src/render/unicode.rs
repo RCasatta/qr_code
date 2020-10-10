@@ -45,7 +45,11 @@ impl RenderCanvas for Canvas1x2 {
 
     fn new(width: u32, height: u32, dark_pixel: Dense1x2, light_pixel: Dense1x2) -> Self {
         let a = vec![light_pixel.value(); (width * height) as usize];
-        Canvas1x2 { width, canvas: a, dark_pixel: dark_pixel.value() }
+        Canvas1x2 {
+            width,
+            canvas: a,
+            dark_pixel: dark_pixel.value(),
+        }
     }
 
     fn draw_dark_pixel(&mut self, x: u32, y: u32) {
@@ -63,7 +67,11 @@ impl RenderCanvas for Canvas1x2 {
                 {
                     // Then zipping those 2 lines together into a single 2-bit number list.
                     if rows.len() == 2 {
-                        rows[0].iter().zip(rows[1]).map(|(top, bot)| (top * 2 + bot)).collect::<Vec<u8>>()
+                        rows[0]
+                            .iter()
+                            .zip(rows[1])
+                            .map(|(top, bot)| (top * 2 + bot))
+                            .collect::<Vec<u8>>()
                     } else {
                         rows[0].iter().map(|top| (top * 2)).collect::<Vec<u8>>()
                     }
@@ -87,7 +95,9 @@ fn test_render_to_utf8_string() {
 
     assert_eq!(&image, " ▄  \n  ▀ ");
 
-    let image2 = Renderer::<Dense1x2>::new(colors, 2, 1).module_dimensions(2, 2).build();
+    let image2 = Renderer::<Dense1x2>::new(colors, 2, 1)
+        .module_dimensions(2, 2)
+        .build();
 
     assert_eq!(&image2, "        \n  ██    \n    ██  \n        ");
 }

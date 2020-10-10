@@ -26,7 +26,11 @@ impl Segment {
     /// length bits) when this segment is encoded.
     pub fn encoded_len(&self, version: Version) -> usize {
         let byte_size = self.end - self.begin;
-        let chars_count = if self.mode == Mode::Kanji { byte_size / 2 } else { byte_size };
+        let chars_count = if self.mode == Mode::Kanji {
+            byte_size / 2
+        } else {
+            byte_size
+        };
 
         let mode_bits_count = version.mode_bits_count();
         let length_bits_count = self.mode.length_bits_count(version);
@@ -100,7 +104,11 @@ impl<'a> Parser<'a> {
     ///
     pub fn new(data: &[u8]) -> Parser {
         Parser {
-            ecs_iter: EcsIter { base: data.iter(), index: 0, ended: false },
+            ecs_iter: EcsIter {
+                base: data.iter(),
+                index: 0,
+                ended: false,
+            },
             state: State::Init,
             begin: 0,
             pending_single_byte: false,
@@ -115,7 +123,11 @@ impl<'a> Iterator for Parser<'a> {
         if self.pending_single_byte {
             self.pending_single_byte = false;
             self.begin += 1;
-            return Some(Segment { mode: Mode::Byte, begin: self.begin - 1, end: self.begin });
+            return Some(Segment {
+                mode: Mode::Byte,
+                begin: self.begin - 1,
+                end: self.begin,
+            });
         }
 
         loop {
@@ -140,13 +152,21 @@ impl<'a> Iterator for Parser<'a> {
                     } else {
                         self.pending_single_byte = true;
                         self.begin = next_begin;
-                        return Some(Segment { mode: Mode::Kanji, begin: old_begin, end: next_begin });
+                        return Some(Segment {
+                            mode: Mode::Kanji,
+                            begin: old_begin,
+                            end: next_begin,
+                        });
                     }
                 }
             };
 
             self.begin = i;
-            return Some(Segment { mode: push_mode, begin: old_begin, end: i });
+            return Some(Segment {
+                mode: push_mode,
+                begin: old_begin,
+                end: i,
+            });
         }
     }
 }
@@ -166,11 +186,31 @@ mod parse_tests {
         assert_eq!(
             segs,
             vec![
-                Segment { mode: Mode::Numeric, begin: 0, end: 29 },
-                Segment { mode: Mode::Alphanumeric, begin: 29, end: 30 },
-                Segment { mode: Mode::Numeric, begin: 30, end: 32 },
-                Segment { mode: Mode::Alphanumeric, begin: 32, end: 35 },
-                Segment { mode: Mode::Numeric, begin: 35, end: 38 },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 29
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 29,
+                    end: 30
+                },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 30,
+                    end: 32
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 32,
+                    end: 35
+                },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 35,
+                    end: 38
+                },
             ]
         );
     }
@@ -181,10 +221,26 @@ mod parse_tests {
         assert_eq!(
             segs,
             vec![
-                Segment { mode: Mode::Kanji, begin: 0, end: 4 },
-                Segment { mode: Mode::Alphanumeric, begin: 4, end: 5 },
-                Segment { mode: Mode::Byte, begin: 5, end: 6 },
-                Segment { mode: Mode::Kanji, begin: 6, end: 8 },
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 0,
+                    end: 4
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 4,
+                    end: 5
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 5,
+                    end: 6
+                },
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 6,
+                    end: 8
+                },
             ]
         );
     }
@@ -196,12 +252,36 @@ mod parse_tests {
         assert_eq!(
             segs,
             vec![
-                Segment { mode: Mode::Kanji, begin: 0, end: 4 },
-                Segment { mode: Mode::Byte, begin: 4, end: 5 },
-                Segment { mode: Mode::Kanji, begin: 5, end: 7 },
-                Segment { mode: Mode::Byte, begin: 7, end: 10 },
-                Segment { mode: Mode::Kanji, begin: 10, end: 12 },
-                Segment { mode: Mode::Byte, begin: 12, end: 13 },
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 0,
+                    end: 4
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 4,
+                    end: 5
+                },
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 5,
+                    end: 7
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 7,
+                    end: 10
+                },
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 10,
+                    end: 12
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 12,
+                    end: 13
+                },
             ]
         );
     }
@@ -211,7 +291,18 @@ mod parse_tests {
         let segs = parse(b"\x81\x30");
         assert_eq!(
             segs,
-            vec![Segment { mode: Mode::Byte, begin: 0, end: 1 }, Segment { mode: Mode::Numeric, begin: 1, end: 2 },]
+            vec![
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 0,
+                    end: 1
+                },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 1,
+                    end: 2
+                },
+            ]
         );
     }
 
@@ -222,7 +313,18 @@ mod parse_tests {
         let segs = parse(b"\xeb\xc0");
         assert_eq!(
             segs,
-            vec![Segment { mode: Mode::Byte, begin: 0, end: 1 }, Segment { mode: Mode::Byte, begin: 1, end: 2 },]
+            vec![
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 0,
+                    end: 1
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 1,
+                    end: 2
+                },
+            ]
         );
     }
 
@@ -231,7 +333,18 @@ mod parse_tests {
         let segs = parse(b"\x81\x7f");
         assert_eq!(
             segs,
-            vec![Segment { mode: Mode::Byte, begin: 0, end: 1 }, Segment { mode: Mode::Byte, begin: 1, end: 2 },]
+            vec![
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 0,
+                    end: 1
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 1,
+                    end: 2
+                },
+            ]
         );
     }
 
@@ -240,7 +353,18 @@ mod parse_tests {
         let segs = parse(b"\x81\x40\x81");
         assert_eq!(
             segs,
-            vec![Segment { mode: Mode::Kanji, begin: 0, end: 2 }, Segment { mode: Mode::Byte, begin: 2, end: 3 },]
+            vec![
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 0,
+                    end: 2
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 2,
+                    end: 3
+                },
+            ]
         );
     }
 }
@@ -268,7 +392,11 @@ impl<I: Iterator<Item = Segment>> Optimizer<I> {
         match segments.next() {
             None => Self {
                 parser: segments,
-                last_segment: Segment { mode: Mode::Numeric, begin: 0, end: 0 },
+                last_segment: Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 0,
+                },
                 last_segment_size: 0,
                 version,
                 ended: true,
@@ -359,13 +487,33 @@ mod optimize_tests {
     fn test_example_1() {
         test_optimization_result(
             vec![
-                Segment { mode: Mode::Alphanumeric, begin: 0, end: 3 },
-                Segment { mode: Mode::Numeric, begin: 3, end: 6 },
-                Segment { mode: Mode::Byte, begin: 6, end: 10 },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 0,
+                    end: 3,
+                },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 3,
+                    end: 6,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 6,
+                    end: 10,
+                },
             ],
             vec![
-                Segment { mode: Mode::Alphanumeric, begin: 0, end: 6 },
-                Segment { mode: Mode::Byte, begin: 6, end: 10 },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 0,
+                    end: 6,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 6,
+                    end: 10,
+                },
             ],
             Version::Normal(1),
         );
@@ -375,15 +523,43 @@ mod optimize_tests {
     fn test_example_2() {
         test_optimization_result(
             vec![
-                Segment { mode: Mode::Numeric, begin: 0, end: 29 },
-                Segment { mode: Mode::Alphanumeric, begin: 29, end: 30 },
-                Segment { mode: Mode::Numeric, begin: 30, end: 32 },
-                Segment { mode: Mode::Alphanumeric, begin: 32, end: 35 },
-                Segment { mode: Mode::Numeric, begin: 35, end: 38 },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 29,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 29,
+                    end: 30,
+                },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 30,
+                    end: 32,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 32,
+                    end: 35,
+                },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 35,
+                    end: 38,
+                },
             ],
             vec![
-                Segment { mode: Mode::Numeric, begin: 0, end: 29 },
-                Segment { mode: Mode::Alphanumeric, begin: 29, end: 38 },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 29,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 29,
+                    end: 38,
+                },
             ],
             Version::Normal(9),
         );
@@ -393,12 +569,32 @@ mod optimize_tests {
     fn test_example_3() {
         test_optimization_result(
             vec![
-                Segment { mode: Mode::Kanji, begin: 0, end: 4 },
-                Segment { mode: Mode::Alphanumeric, begin: 4, end: 5 },
-                Segment { mode: Mode::Byte, begin: 5, end: 6 },
-                Segment { mode: Mode::Kanji, begin: 6, end: 8 },
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 0,
+                    end: 4,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 4,
+                    end: 5,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 5,
+                    end: 6,
+                },
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 6,
+                    end: 8,
+                },
             ],
-            vec![Segment { mode: Mode::Byte, begin: 0, end: 8 }],
+            vec![Segment {
+                mode: Mode::Byte,
+                begin: 0,
+                end: 8,
+            }],
             Version::Normal(1),
         );
     }
@@ -406,8 +602,30 @@ mod optimize_tests {
     #[test]
     fn test_example_4() {
         test_optimization_result(
-            vec![Segment { mode: Mode::Kanji, begin: 0, end: 10 }, Segment { mode: Mode::Byte, begin: 10, end: 11 }],
-            vec![Segment { mode: Mode::Kanji, begin: 0, end: 10 }, Segment { mode: Mode::Byte, begin: 10, end: 11 }],
+            vec![
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 0,
+                    end: 10,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 10,
+                    end: 11,
+                },
+            ],
+            vec![
+                Segment {
+                    mode: Mode::Kanji,
+                    begin: 0,
+                    end: 10,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 10,
+                    end: 11,
+                },
+            ],
             Version::Normal(1),
         );
     }
@@ -416,12 +634,28 @@ mod optimize_tests {
     fn test_annex_j_guideline_1a() {
         test_optimization_result(
             vec![
-                Segment { mode: Mode::Numeric, begin: 0, end: 3 },
-                Segment { mode: Mode::Alphanumeric, begin: 3, end: 4 },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 3,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 3,
+                    end: 4,
+                },
             ],
             vec![
-                Segment { mode: Mode::Numeric, begin: 0, end: 3 },
-                Segment { mode: Mode::Alphanumeric, begin: 3, end: 4 },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 3,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 3,
+                    end: 4,
+                },
             ],
             Version::Micro(2),
         );
@@ -431,10 +665,22 @@ mod optimize_tests {
     fn test_annex_j_guideline_1b() {
         test_optimization_result(
             vec![
-                Segment { mode: Mode::Numeric, begin: 0, end: 2 },
-                Segment { mode: Mode::Alphanumeric, begin: 2, end: 4 },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 2,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 2,
+                    end: 4,
+                },
             ],
-            vec![Segment { mode: Mode::Alphanumeric, begin: 0, end: 4 }],
+            vec![Segment {
+                mode: Mode::Alphanumeric,
+                begin: 0,
+                end: 4,
+            }],
             Version::Micro(2),
         );
     }
@@ -443,10 +689,22 @@ mod optimize_tests {
     fn test_annex_j_guideline_1c() {
         test_optimization_result(
             vec![
-                Segment { mode: Mode::Numeric, begin: 0, end: 3 },
-                Segment { mode: Mode::Alphanumeric, begin: 3, end: 4 },
+                Segment {
+                    mode: Mode::Numeric,
+                    begin: 0,
+                    end: 3,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 3,
+                    end: 4,
+                },
             ],
-            vec![Segment { mode: Mode::Alphanumeric, begin: 0, end: 4 }],
+            vec![Segment {
+                mode: Mode::Alphanumeric,
+                begin: 0,
+                end: 4,
+            }],
             Version::Micro(3),
         );
     }

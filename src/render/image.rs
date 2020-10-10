@@ -30,7 +30,10 @@ impl<P: ImagePixel + 'static> Canvas for (P, ImageBuffer<P, Vec<P::Subpixel>>) {
     type Image = ImageBuffer<P, Vec<P::Subpixel>>;
 
     fn new(width: u32, height: u32, dark_pixel: P, light_pixel: P) -> Self {
-        (dark_pixel, ImageBuffer::from_pixel(width, height, light_pixel))
+        (
+            dark_pixel,
+            ImageBuffer::from_pixel(width, height, light_pixel),
+        )
     }
 
     fn draw_dark_pixel(&mut self, x: u32, y: u32) {
@@ -83,9 +86,10 @@ mod render_tests {
 
     #[test]
     fn test_render_rgba_unsized() {
-        let image = Renderer::<Rgba<u8>>::new(&[Color::Light, Color::Dark, Color::Dark, Color::Dark], 2, 1)
-            .module_dimensions(1, 1)
-            .build();
+        let image =
+            Renderer::<Rgba<u8>>::new(&[Color::Light, Color::Dark, Color::Dark, Color::Dark], 2, 1)
+                .module_dimensions(1, 1)
+                .build();
 
         #[rustfmt::skip]
         let expected: &[u8] = &[
@@ -100,9 +104,13 @@ mod render_tests {
 
     #[test]
     fn test_render_resized_min() {
-        let image = Renderer::<Luma<u8>>::new(&[Color::Dark, Color::Light, Color::Light, Color::Dark], 2, 1)
-            .min_dimensions(10, 10)
-            .build();
+        let image = Renderer::<Luma<u8>>::new(
+            &[Color::Dark, Color::Light, Color::Light, Color::Dark],
+            2,
+            1,
+        )
+        .min_dimensions(10, 10)
+        .build();
 
         #[rustfmt::skip]
         let expected: &[u8] = &[
@@ -129,9 +137,13 @@ mod render_tests {
 
     #[test]
     fn test_render_resized_max() {
-        let image = Renderer::<Luma<u8>>::new(&[Color::Dark, Color::Light, Color::Light, Color::Dark], 2, 1)
-            .max_dimensions(10, 5)
-            .build();
+        let image = Renderer::<Luma<u8>>::new(
+            &[Color::Dark, Color::Light, Color::Light, Color::Dark],
+            2,
+            1,
+        )
+        .max_dimensions(10, 5)
+        .build();
 
         #[rustfmt::skip]
         let expected: &[u8] = &[

@@ -90,7 +90,10 @@ impl QrCode {
     ///
     /// Returns error if the QR code cannot be constructed, e.g. when the data
     /// is too long.
-    pub fn with_error_correction_level<D: AsRef<[u8]>>(data: D, ec_level: EcLevel) -> QrResult<Self> {
+    pub fn with_error_correction_level<D: AsRef<[u8]>>(
+        data: D,
+        ec_level: EcLevel,
+    ) -> QrResult<Self> {
         let bits = bits::encode_auto(data.as_ref(), ec_level)?;
         Self::with_bits(bits, ec_level)
     }
@@ -113,7 +116,11 @@ impl QrCode {
     /// Returns error if the QR code cannot be constructed, e.g. when the data
     /// is too long, or when the version and error correction level are
     /// incompatible.
-    pub fn with_version<D: AsRef<[u8]>>(data: D, version: Version, ec_level: EcLevel) -> QrResult<Self> {
+    pub fn with_version<D: AsRef<[u8]>>(
+        data: D,
+        version: Version,
+        ec_level: EcLevel,
+    ) -> QrResult<Self> {
         let mut bits = bits::Bits::new(version);
         bits.push_optimal_data(data.as_ref())?;
         bits.push_terminator(ec_level)?;
@@ -155,7 +162,12 @@ impl QrCode {
         canvas.draw_all_functional_patterns();
         canvas.draw_data(&*encoded_data, &*ec_data);
         let canvas = canvas.apply_best_mask();
-        Ok(Self { content: canvas.into_colors(), version, ec_level, width: version.width().as_usize() })
+        Ok(Self {
+            content: canvas.into_colors(),
+            version,
+            ec_level,
+            width: version.width().as_usize(),
+        })
     }
 
     /// Gets the version of this QR code.
@@ -193,7 +205,11 @@ impl QrCode {
     /// Converts the QR code into a human-readable string. This is mainly for
     /// debugging only.
     pub fn to_debug_str(&self, on_char: char, off_char: char) -> String {
-        self.render().quiet_zone(false).dark_color(on_char).light_color(off_char).build()
+        self.render()
+            .quiet_zone(false)
+            .dark_color(on_char)
+            .light_color(off_char)
+            .build()
     }
 
     /// Converts the QR code to a vector of booleans. Each entry represents the
@@ -207,7 +223,10 @@ impl QrCode {
     /// color of the module, with "true" means dark and "false" means light.
     #[deprecated(since = "0.4.0", note = "use `into_colors()` instead")]
     pub fn into_vec(self) -> Vec<bool> {
-        self.content.into_iter().map(|c| c != Color::Light).collect()
+        self.content
+            .into_iter()
+            .map(|c| c != Color::Light)
+            .collect()
     }
 
     /// Converts the QR code to a vector of colors.
@@ -324,7 +343,9 @@ mod image_tests {
     fn test_annex_i_qr_as_image() {
         let code = QrCode::new(b"01234567").unwrap();
         let image = code.render::<Luma<u8>>().build();
-        let expected = load_from_memory(include_bytes!("test_annex_i_qr_as_image.png")).unwrap().to_luma();
+        let expected = load_from_memory(include_bytes!("test_annex_i_qr_as_image.png"))
+            .unwrap()
+            .to_luma();
         assert_eq!(image.dimensions(), expected.dimensions());
         assert_eq!(image.into_raw(), expected.into_raw());
     }
@@ -338,7 +359,9 @@ mod image_tests {
             .dark_color(Rgb([128, 0, 0]))
             .light_color(Rgb([255, 255, 128]))
             .build();
-        let expected = load_from_memory(include_bytes!("test_annex_i_micro_qr_as_image.png")).unwrap().to_rgb();
+        let expected = load_from_memory(include_bytes!("test_annex_i_micro_qr_as_image.png"))
+            .unwrap()
+            .to_rgb();
         assert_eq!(image.dimensions(), expected.dimensions());
         assert_eq!(image.into_raw(), expected.into_raw());
     }
