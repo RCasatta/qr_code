@@ -29,7 +29,6 @@ Many context supports rescaling mode specific for pixelated images, for example 
 
 As an alternative see method `Bmp::mul` and `Bmp::add_whitespace`
 
-
 ## Unicode string generation
 
 ```rust

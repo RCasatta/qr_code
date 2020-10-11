@@ -185,24 +185,13 @@ impl QrCode {
 
     /// Converts the QR code to a vector of booleans. Each entry represents the
     /// color of the module, with "true" means dark and "false" means light.
-    #[deprecated(since = "0.4.0", note = "use `to_colors()` instead")]
     pub fn to_vec(&self) -> Vec<bool> {
         self.content.iter().map(|c| *c != Color::Light).collect()
     }
 
-    /// Converts the QR code to a vector of booleans. Each entry represents the
-    /// color of the module, with "true" means dark and "false" means light.
-    #[deprecated(since = "0.4.0", note = "use `into_colors()` instead")]
-    pub fn into_vec(self) -> Vec<bool> {
-        self.content
-            .into_iter()
-            .map(|c| c != Color::Light)
-            .collect()
-    }
-
-    /// Converts the QR code to a vector of colors.
-    pub fn to_colors(&self) -> Vec<Color> {
-        self.content.clone()
+    /// Returns an iterator over QR code vector of colors.
+    pub fn iter(&self) -> QrCodeIterator {
+        QrCodeIterator::new(&self)
     }
 
     /// Converts the QR code to a vector of colors.
@@ -217,5 +206,30 @@ impl Index<(usize, usize)> for QrCode {
     fn index(&self, (x, y): (usize, usize)) -> &Color {
         let index = y * self.width + x;
         &self.content[index]
+    }
+}
+
+pub struct QrCodeIterator<'a> {
+    qr_code: &'a QrCode,
+    index: usize,
+}
+
+impl<'a> QrCodeIterator<'a> {
+    fn new(qr_code: &'a QrCode) -> Self {
+        let index = 0;
+        QrCodeIterator { qr_code, index }
+    }
+}
+
+impl<'a> Iterator for QrCodeIterator<'a> {
+    type Item = bool;
+    fn next(&mut self) -> Option<bool> {
+        let result = self
+            .qr_code
+            .content
+            .get(self.index)
+            .map(|c| c == &Color::Dark);
+        self.index += 1;
+        result
     }
 }

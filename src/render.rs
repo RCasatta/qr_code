@@ -36,16 +36,9 @@ impl QrCode {
     }
 
     #[cfg(feature = "bmp")]
-    pub fn to_bmp(self) -> bmp_monochrome::Bmp {
+    pub fn to_bmp(&self) -> bmp_monochrome::Bmp {
         let width = self.width();
-        let data = self
-            .to_colors()
-            .iter()
-            .map(|e| match *e {
-                Color::Light => false,
-                Color::Dark => true,
-            })
-            .collect();
+        let data = self.to_vec();
         bmp_monochrome::Bmp::new(data, width).unwrap()
     }
 }
