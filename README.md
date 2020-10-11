@@ -6,6 +6,11 @@ qr_code
 
 QR code and Micro QR code encoder in Rust. [Documentation](https://docs.rs/qr_code).
 
+This lib forked https://docs.rs/qrcode mainly because of lack of support to structured QR code (multiple QR codes)
+even if the minimal change required has been pushed https://github.com/kennytm/qrcode-rust/pull/44
+
+Moreover dependencies `image`, `checked_int_cast` and module `render` has been removed with a view to simplicity.
+
 Example
 -------
 
