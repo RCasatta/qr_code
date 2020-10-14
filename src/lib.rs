@@ -27,6 +27,9 @@ pub mod optimize;
 pub mod render;
 pub mod types;
 
+#[cfg(feature = "bmp")]
+pub mod decode;
+
 pub use crate::types::{Color, EcLevel, QrResult, Version};
 
 use crate::cast::As;
