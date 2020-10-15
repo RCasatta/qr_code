@@ -236,3 +236,35 @@ impl<'a> Iterator for QrCodeIterator<'a> {
         result
     }
 }
+
+#[cfg(feature = "bmp")]
+#[cfg(test)]
+mod tests {
+    use crate::decode::BmpDecode;
+
+    #[test]
+    fn test_rt() {
+        use crate::QrCode;
+        use bmp_monochrome::Bmp;
+        use rand::distributions::Alphanumeric;
+        use rand::Rng;
+        use std::io::Cursor;
+
+        let rand_string: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(30)
+            .collect();
+        let qr_code = QrCode::new(rand_string.as_bytes()).unwrap();
+        let mut cursor = Cursor::new(vec![]);
+        qr_code
+            .to_bmp()
+            .mul(3)
+            .add_white_border(3)
+            .write(&mut cursor)
+            .unwrap();
+        cursor.set_position(0);
+        let bmp = Bmp::read(cursor).unwrap();
+        let decoded = bmp.normalize().decode();
+        assert_eq!(rand_string, decoded);
+    }
+}
