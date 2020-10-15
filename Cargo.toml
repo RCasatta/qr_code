@@ -14,7 +14,7 @@ exclude = [
 ]
 
 [dependencies]
-bmp-monochrome = { version = "0.11.0", default-features = false, optional = true }
+bmp-monochrome = { version = "0.12.0", default-features = false, optional = true }
 
 [dev-dependencies]
 
