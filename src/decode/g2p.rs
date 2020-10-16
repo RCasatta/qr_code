@@ -1,4 +1,4 @@
-// taken from https://github.com/WanzenBug/g2p version 0.4.0
+//! taken from https://github.com/WanzenBug/g2p version 0.4.0
 
 use crate::decode::g2poly::G2Poly;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};

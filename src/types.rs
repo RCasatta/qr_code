@@ -1,11 +1,10 @@
+//! Type to support QR code encoding
+
 use crate::cast::As;
 use std::cmp::{Ordering, PartialOrd};
 use std::default::Default;
 use std::fmt::{Display, Error, Formatter};
 use std::ops::Not;
-
-//------------------------------------------------------------------------------
-//{{{ QrResult
 
 /// `QrError` encodes the error encountered when generating a QR code.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

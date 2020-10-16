@@ -366,10 +366,7 @@ mod parse_tests {
     }
 }
 
-//}}}
-//------------------------------------------------------------------------------
-//{{{ Optimizer
-
+/// Optimize the segments by combining adjacent segments when possible.
 pub struct Optimizer<I> {
     parser: I,
     last_segment: Segment,
@@ -410,6 +407,7 @@ impl<I: Iterator<Item = Segment>> Optimizer<I> {
 }
 
 impl<'a> Parser<'a> {
+    /// Optimize the segments by combining adjacent segments when possible.
     pub fn optimize(self, version: Version) -> Optimizer<Parser<'a>> {
         Optimizer::new(self, version)
     }

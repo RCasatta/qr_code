@@ -1,5 +1,5 @@
-// result of macro expansion g2p!(GF16, 4, modulus: 0b1_0011); plus manual adjustment
-// from https://github.com/WanzenBug/g2p version 0.4.0
+//! result of macro expansion g2p!(GF16, 4, modulus: 0b1_0011); plus manual adjustment
+//! from https://github.com/WanzenBug/g2p version 0.4.0
 
 use crate::decode::g2p::GaloisField;
 use crate::decode::g2poly::G2Poly;
@@ -7,9 +7,11 @@ use std::fmt::{self, Debug, Display};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Hash)]
+/// GF16
 pub struct GF16(pub u8);
 
 impl GF16 {
+    /// MASK
     pub const MASK: u8 = 15u64 as u8;
 }
 
@@ -104,8 +106,10 @@ impl GaloisField for GF16 {
     const MODULUS: G2Poly = G2Poly(19u64);
 }
 
+/// Precomputed inverse table
 pub static INV_TABLE: [u8; 16usize] = [0, 1, 9, 14, 13, 11, 7, 6, 15, 2, 12, 5, 10, 4, 3, 8];
 
+/// Precomputed multiplication table
 pub static MUL_TABLE: [[[[u8; 256]; 256]; 1usize]; 1usize] = [[[
     [0; 256],
     [

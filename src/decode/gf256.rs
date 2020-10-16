@@ -1,5 +1,5 @@
-// result of macro expansion g2p!(GF256, 8, modulus: 0b1_0001_1101); plus manual adjustment
-// from https://github.com/WanzenBug/g2p version 0.4.0
+//! result of macro expansion g2p!(GF256, 8, modulus: 0b1_0001_1101); plus manual adjustment
+//! from https://github.com/WanzenBug/g2p version 0.4.0
 
 use crate::decode::g2p::GaloisField;
 use crate::decode::g2poly::G2Poly;

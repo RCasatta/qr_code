@@ -5,8 +5,3 @@ fn main() {
     bmp.write(std::fs::File::create("test.bmp").unwrap())
         .unwrap();
 }
-
-#[cfg(not(feature = "bmp"))]
-fn main() {
-    println!("This example needs bmp feature");
-}
