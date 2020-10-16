@@ -1,9 +1,10 @@
 //!
-//! QRCode encoder
+//! qr_code
 //!
-//! This crate provides a QR code and Micro QR code encoder for binary data.
+//! This crate provides a [QrCode](crate::QrCode) encoder and decoder
 //!
 
+#![deny(missing_docs)]
 #![deny(warnings)]
 #![allow(
     clippy::must_use_candidate, // This is just annoying.
@@ -24,7 +25,7 @@ pub mod canvas;
 mod cast;
 pub mod ec;
 pub mod optimize;
-pub mod render;
+mod render;
 pub mod types;
 
 #[cfg(feature = "bmp")]
@@ -212,6 +213,7 @@ impl Index<(usize, usize)> for QrCode {
     }
 }
 
+/// Iterate over QR code data without consuming the QR code struct
 pub struct QrCodeIterator<'a> {
     qr_code: &'a QrCode,
     index: usize,

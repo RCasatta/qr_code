@@ -1,4 +1,9 @@
-// Imported from https://github.com/WanzenBug/rqrr
+//! Decode a QR code from a BitGrid.
+//!
+//! This is not meant to decode QR codes from camera images, but a QR code encoded in bmp generated
+//! from this crate could be decoded back to the content
+//!
+//! Imported from https://github.com/WanzenBug/rqrr
 
 use g2p::GaloisField;
 use gf16::GF16;
@@ -7,10 +12,10 @@ use std::io::{Cursor, Write};
 use std::mem;
 use version_db::{RSParameters, VERSION_DATA_BASE};
 
-pub mod g2p;
-pub mod g2poly;
-pub mod gf16;
-pub mod gf256;
+mod g2p;
+mod g2poly;
+mod gf16;
+mod gf256;
 mod version_db;
 
 const MAX_PAYLOAD_SIZE: usize = 8896;
@@ -44,7 +49,9 @@ impl BitGrid for &bmp_monochrome::Bmp {
     }
 }
 
+/// Allows to decode the QR coded in a bmp file
 pub trait BmpDecode {
+    /// Allows to decode the QR coded in a bmp file
     fn decode(&self) -> String;
 }
 
@@ -61,12 +68,14 @@ impl BmpDecode for bmp_monochrome::Bmp {
 }
 
 #[derive(Clone)]
+/// RawData
 pub struct RawData {
     data: [u8; MAX_PAYLOAD_SIZE],
     len: usize,
 }
 
 impl RawData {
+    /// new
     pub fn new() -> Self {
         RawData {
             data: [0; MAX_PAYLOAD_SIZE],
@@ -74,6 +83,7 @@ impl RawData {
         }
     }
 
+    /// push
     pub fn push(&mut self, bit: bool) {
         assert!((self.len >> 8) < MAX_PAYLOAD_SIZE);
         let bitpos = (self.len & 7) as u8;
@@ -87,6 +97,7 @@ impl RawData {
 }
 
 #[derive(Clone)]
+/// CorrectedDataStream
 pub struct CorrectedDataStream {
     data: [u8; MAX_PAYLOAD_SIZE],
     ptr: usize,
@@ -94,11 +105,13 @@ pub struct CorrectedDataStream {
 }
 
 impl CorrectedDataStream {
+    /// bits_remaining
     pub fn bits_remaining(&self) -> usize {
         assert!(self.bit_len >= self.ptr);
         self.bit_len - self.ptr
     }
 
+    /// take_bits
     pub fn take_bits(&mut self, nbits: usize) -> usize {
         let mut ret = 0;
         let max_len = ::std::cmp::min(self.bits_remaining(), nbits);

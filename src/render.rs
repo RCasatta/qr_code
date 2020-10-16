@@ -1,6 +1,8 @@
 use crate::{Color, QrCode};
 
 impl QrCode {
+    /// Render the qr code in a utf-8 string (2x1 pixel per character)
+    /// `inverted` toggle the foreground and background color
     pub fn to_string(&self, inverted: bool) -> String {
         let mut result = String::new();
         let width = self.width();
@@ -36,6 +38,7 @@ impl QrCode {
     }
 
     #[cfg(feature = "bmp")]
+    /// Convert the QRCode to Bmp
     pub fn to_bmp(&self) -> bmp_monochrome::Bmp {
         let width = self.width();
         let data = self.to_vec();
