@@ -1,7 +1,7 @@
 qr_code
 =======
 
-[![crates.io](https://img.shields.io/crates/v/qrcode.svg)](https://crates.io/crates/qr_code)
+[![crates.io](https://img.shields.io/crates/v/qr_code.svg)](https://crates.io/crates/qr_code)
 [![MIT OR Apache 2.0](https://img.shields.io/badge/license-MIT%20%2f%20Apache%202.0-blue.svg)](./LICENSE-APACHE.txt)
 
 QR code and Micro QR code encoder in Rust. [Documentation](https://docs.rs/qr_code).
