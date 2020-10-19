@@ -13,6 +13,7 @@
 )]
 #![cfg_attr(feature = "bench", doc(include = "../README.md"))]
 // ^ make sure we can test our README.md.
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 // Re-exported dependencies.
 #[cfg(feature = "bmp")]

@@ -37,8 +37,9 @@ impl QrCode {
         result
     }
 
-    #[cfg(feature = "bmp")]
     /// Convert the QRCode to Bmp
+    #[cfg(feature = "bmp")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "bmp")))]
     pub fn to_bmp(&self) -> bmp_monochrome::Bmp {
         let width = self.width();
         let data = self.to_vec();
