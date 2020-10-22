@@ -236,8 +236,6 @@ impl ::std::fmt::Display for DeQRError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::QrCode;
-    use arbitrary::Unstructured;
 
     #[test]
     fn test_rqrr() {
@@ -603,11 +601,17 @@ mod tests {
         assert_eq!(b"1234567891011121314151617181920".as_ref(), &vec[..])
     }
 
+    /*
     #[test]
     fn test_fuzz() {
         use arbitrary::Arbitrary;
-        let data = include_bytes!("../../test_data/crash-e3acdef3f3e5835cff9378159239247a06d3232e");
-        let mut unstructured = Unstructured::new(data);
-        let _qr_code = QrCode::arbitrary(&mut unstructured);
+        let data = include_bytes!("../../test_data/crash-0d7a321bf16ab956c7bdbf0167bcc4861a1c61f1");
+        let mut unstructured = arbitrary::Unstructured::new(data);
+        let qr_code = qr_code::QrCode::arbitrary(&mut unstructured).unwrap();
+        dbg!(&qr_code);
+        let bmp = qr_code.to_bmp().mul(3).add_white_border(12);
+        bmp.write(std::fs::File::create("cc.bmp").unwrap()).unwrap();
+        let _ = bmp.decode().unwrap();
     }
+     */
 }

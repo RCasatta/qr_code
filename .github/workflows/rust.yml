@@ -38,7 +38,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args:  --verbose --all --features bmp,decode
+          args:  --verbose --all --all-features
       - uses: actions-rs/cargo@v1
         with:
           command: run

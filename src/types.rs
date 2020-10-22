@@ -120,7 +120,6 @@ pub enum EcLevel {
 /// The smallest version is `Version::Normal(1)` of size 21×21, and the largest
 /// is `Version::Normal(40)` of size 177×177.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Version {
     /// A normal QR code version. The parameter should be between 1 and 40.
     Normal(i16),
@@ -183,6 +182,18 @@ impl Version {
         match self {
             Version::Normal(_) => false,
             Version::Micro(_) => true,
+        }
+    }
+}
+
+#[cfg(feature = "fuzz")]
+impl arbitrary::Arbitrary for Version {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
+        let v = u8::arbitrary(u)?;
+        match v {
+            1..=40 => Ok(Version::Normal(v as i16)),
+            //41..=44 => Ok(Version::Micro((v-40u8) as i16)),  not supported for now
+            _ => Err(arbitrary::Error::IncorrectFormat),
         }
     }
 }

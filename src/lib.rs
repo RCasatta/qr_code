@@ -244,10 +244,33 @@ impl<'a> Iterator for QrCodeIterator<'a> {
 impl arbitrary::Arbitrary for QrCode {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
         let level = crate::EcLevel::arbitrary(u)?;
-        let bits = crate::bits::Bits::arbitrary(u)?; // consider initializing bits with a vec according to data type
-        let qr_code =
-            QrCode::with_bits(bits, level).map_err(|_| arbitrary::Error::IncorrectFormat)?;
+        let version = crate::Version::arbitrary(u)?;
+        let data = <Vec<u8>>::arbitrary(u)?;
+        let qr_code = QrCode::with_version(data, version, level)
+            .map_err(|_| arbitrary::Error::IncorrectFormat)?;
         Ok(qr_code)
+    }
+}
+
+#[cfg(feature = "fuzz")]
+#[derive(Debug)]
+/// doc
+pub struct QrCodeData {
+    /// qr
+    pub qr_code: QrCode,
+    /// data
+    pub data: Vec<u8>,
+}
+
+#[cfg(feature = "fuzz")]
+impl arbitrary::Arbitrary for QrCodeData {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
+        let level = crate::EcLevel::arbitrary(u)?;
+        let version = crate::Version::arbitrary(u)?;
+        let data = <Vec<u8>>::arbitrary(u)?;
+        let qr_code = QrCode::with_version(data.clone(), version, level)
+            .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+        Ok(QrCodeData { qr_code, data })
     }
 }
 

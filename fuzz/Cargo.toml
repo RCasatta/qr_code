@@ -34,3 +34,9 @@ name = "fuzz_target_decode"
 path = "fuzz_targets/fuzz_target_decode.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_target_decode_check"
+path = "fuzz_targets/fuzz_target_decode_check.rs"
+test = false
+doc = false
