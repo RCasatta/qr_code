@@ -1,4 +1,4 @@
-#[cfg(feature = "bmp")]
+#[cfg(all(feature = "bmp", feature = "decode"))]
 fn main() {
     use qr_code::bmp_monochrome::Bmp;
     use qr_code::decode::BmpDecode;
@@ -6,9 +6,4 @@ fn main() {
 
     let bmp = Bmp::read(File::open("qr_not_normalized.bmp").unwrap()).unwrap();
     println!("{}", &bmp.normalize().decode());
-}
-
-#[cfg(not(feature = "bmp"))]
-fn main() {
-    println!("This example needs bmp feature");
 }

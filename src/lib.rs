@@ -29,7 +29,7 @@ pub mod optimize;
 mod render;
 pub mod types;
 
-#[cfg(feature = "bmp")]
+#[cfg(all(feature = "bmp", feature = "decode"))]
 pub mod decode;
 
 pub use crate::types::{Color, EcLevel, QrResult, Version};
@@ -240,13 +240,13 @@ impl<'a> Iterator for QrCodeIterator<'a> {
     }
 }
 
-#[cfg(feature = "bmp")]
+#[cfg(all(feature = "bmp", feature = "decode"))]
 #[cfg(test)]
 mod tests {
-    use crate::decode::BmpDecode;
 
     #[test]
     fn test_rt() {
+        use crate::decode::BmpDecode;
         use crate::QrCode;
         use bmp_monochrome::Bmp;
         use rand::distributions::Alphanumeric;

@@ -1,5 +1,3 @@
-// taken from https://github.com/WanzenBug/rqrr version 0.4.0
-
 /* ***********************************************************************
  * QR-code version information database
  */
