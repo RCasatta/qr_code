@@ -267,7 +267,19 @@ mod tests {
             .unwrap();
         cursor.set_position(0);
         let bmp = Bmp::read(cursor).unwrap();
-        let decoded = bmp.normalize().decode();
+        let result = bmp.normalize().decode().unwrap();
+        let decoded = std::str::from_utf8(&result).unwrap();
         assert_eq!(rand_string, decoded);
     }
+
+    /*
+    #[test]
+    fn test_fuzz() {
+        use crate::decode::BmpDecode;
+        let data = include_bytes!("../test_data/crash-70ecec40327a1b122e0c3346e383de8154e66b73");
+        let code = crate::QrCode::new(data).unwrap();
+        let result = code.to_bmp().mul(2).add_white_border(2).normalize().decode().unwrap();
+        assert_eq!(result, data);
+    }
+    */
 }
