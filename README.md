@@ -26,7 +26,7 @@ bmp.write(std::fs::File::create("test.bmp").unwrap()).unwrap();
 
 Generate this image:
 
-![test](https://raw.githubusercontent.com/RCasatta/qr_code/master/test.bmp)
+![test](https://raw.githubusercontent.com/RCasatta/qr_code/master/test_data/test.bmp)
 
 Looks small?
 

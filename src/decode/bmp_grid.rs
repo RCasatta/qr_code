@@ -46,7 +46,7 @@ mod tests {
 
     #[test]
     fn test_decode() {
-        let bmp = &Bmp::read(File::open("test.bmp").unwrap()).unwrap();
+        let bmp = &Bmp::read(File::open("test_data/test.bmp").unwrap()).unwrap();
         let meta = read_format(&bmp).unwrap();
         let expected = MetaData {
             version: Version(1),
@@ -89,7 +89,7 @@ mod tests {
 #######.##..#...#..#.
 "#;
         let mut chars = expected.chars();
-        let bmp = &Bmp::read(File::open("test.bmp").unwrap()).unwrap();
+        let bmp = &Bmp::read(File::open("test_data/test.bmp").unwrap()).unwrap();
         for i in 0..bmp.size() {
             for j in 0..bmp.size() {
                 let mut char = chars.next().unwrap();
