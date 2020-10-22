@@ -37,7 +37,7 @@ pub use crate::types::{Color, EcLevel, QrResult, Version};
 use crate::cast::As;
 
 /// The encoded QR code symbol.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct QrCode {
     content: Vec<Color>,
     version: Version,
@@ -237,6 +237,17 @@ impl<'a> Iterator for QrCodeIterator<'a> {
             .map(|c| c == &Color::Dark);
         self.index += 1;
         result
+    }
+}
+
+#[cfg(feature = "fuzz")]
+impl arbitrary::Arbitrary for QrCode {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
+        let level = crate::EcLevel::arbitrary(u)?;
+        let bits = crate::bits::Bits::arbitrary(u)?; // consider initializing bits with a vec according to data type
+        let qr_code =
+            QrCode::with_bits(bits, level).map_err(|_| arbitrary::Error::IncorrectFormat)?;
+        Ok(qr_code)
     }
 }
 

@@ -94,6 +94,7 @@ impl Not for Color {
 /// The error correction level. It allows the original information be recovered
 /// even if parts of the code is damaged.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord)]
+#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 pub enum EcLevel {
     /// Low error correction. Allows up to 7% of wrong blocks.
     L = 0,
@@ -119,6 +120,7 @@ pub enum EcLevel {
 /// The smallest version is `Version::Normal(1)` of size 21×21, and the largest
 /// is `Version::Normal(40)` of size 177×177.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Version {
     /// A normal QR code version. The parameter should be between 1 and 40.
     Normal(i16),

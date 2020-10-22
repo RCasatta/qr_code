@@ -11,7 +11,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.3"
-qr_code = { path = "..", features=["bmp", "decode"]}
+qr_code = { path = "..", features=["bmp", "decode", "fuzz"]}
 
 # Prevent this from interfering with workspaces
 [workspace]
@@ -26,5 +26,11 @@ doc = false
 [[bin]]
 name = "fuzz_target_rt"
 path = "fuzz_targets/fuzz_target_rt.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_target_decode"
+path = "fuzz_targets/fuzz_target_decode.rs"
 test = false
 doc = false

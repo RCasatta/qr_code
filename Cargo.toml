@@ -16,13 +16,16 @@ exclude = [
 [dependencies]
 bmp-monochrome = { version = "0.15.0", default-features = false, optional = true }
 g2p = { version = "0.4", default-features = false, optional = true }
+arbitrary = { version = "0.4.7", default-features = false, optional = true, features = ["derive"]}
 
 [dev-dependencies]
 rand = "0.7.3"
+arbitrary = "0.4.7"
 
 [features]
 bmp = ["bmp-monochrome"]
 decode = ["g2p"]
+fuzz = ["arbitrary"]
 
 [[example]]
 name = "encode_string"

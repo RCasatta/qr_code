@@ -11,6 +11,7 @@ use crate::types::{EcLevel, Mode, QrError, QrResult, Version};
 
 /// The `Bits` structure stores the encoded data for a QR code.
 #[derive(Clone)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Bits {
     data: Vec<u8>,
     bit_offset: usize,
