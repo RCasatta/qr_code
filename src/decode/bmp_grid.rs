@@ -3,6 +3,7 @@ use crate::decode::decode::decode_payload;
 use crate::decode::decode::read_data;
 use crate::decode::decode::read_format;
 use crate::decode::BitGrid;
+use bmp_monochrome::BmpError;
 use std::io::Cursor;
 
 impl BitGrid for &bmp_monochrome::Bmp {
@@ -18,18 +19,18 @@ impl BitGrid for &bmp_monochrome::Bmp {
 /// Allows to decode the QR coded in a bmp file
 pub trait BmpDecode {
     /// Allows to decode the QR coded in a bmp file
-    fn decode(&self) -> String;
+    fn decode(&self) -> Result<Vec<u8>, BmpError>;
 }
 
 impl BmpDecode for bmp_monochrome::Bmp {
-    fn decode(&self) -> String {
-        let meta = read_format(&self).unwrap();
+    fn decode(&self) -> Result<Vec<u8>, BmpError> {
+        let err = |_| BmpError::Generic;
+        let meta = read_format(&self).map_err(err)?;
         let raw = read_data(&self, &meta);
-        let stream = codestream_ecc(&meta, raw).unwrap();
+        let stream = codestream_ecc(&meta, raw).map_err(err)?;
         let mut writer = Cursor::new(vec![]);
-        decode_payload(&meta, stream, &mut writer).unwrap();
-        let out = String::from_utf8(writer.into_inner()).unwrap();
-        out
+        decode_payload(&meta, stream, &mut writer).map_err(err)?;
+        Ok(writer.into_inner())
     }
 }
 
