@@ -8,11 +8,11 @@ use std::io::Cursor;
 
 impl BitGrid for &bmp_monochrome::Bmp {
     fn size(&self) -> usize {
-        self.width()
+        self.width() as usize
     }
 
     fn bit(&self, y: usize, x: usize) -> bool {
-        self.get(y, x)
+        self.get(y as u16, x as u16)
     }
 }
 

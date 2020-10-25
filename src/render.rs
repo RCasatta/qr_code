@@ -42,7 +42,7 @@ impl QrCode {
     #[cfg_attr(docsrs, doc(cfg(feature = "bmp")))]
     pub fn to_bmp(&self) -> bmp_monochrome::Bmp {
         let width = self.width();
-        let data = self.to_vec();
-        bmp_monochrome::Bmp::new(data, width).unwrap()
+        let data = self.to_vec().chunks(width).map(|r| r.to_vec()).collect();
+        bmp_monochrome::Bmp::new(data).unwrap()
     }
 }

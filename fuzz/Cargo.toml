@@ -18,25 +18,13 @@ qr_code = { path = "..", features=["bmp", "decode", "fuzz"]}
 members = ["."]
 
 [[bin]]
-name = "fuzz_target_encode"
-path = "fuzz_targets/fuzz_target_encode.rs"
+name = "encode"
+path = "fuzz_targets/encode.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "fuzz_target_rt"
-path = "fuzz_targets/fuzz_target_rt.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_target_decode"
-path = "fuzz_targets/fuzz_target_decode.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_target_decode_check"
-path = "fuzz_targets/fuzz_target_decode_check.rs"
+name = "decode_check"
+path = "fuzz_targets/decode_check.rs"
 test = false
 doc = false

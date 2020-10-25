@@ -14,13 +14,14 @@ exclude = [
 ]
 
 [dependencies]
-bmp-monochrome = { version = "0.15.0", default-features = false, optional = true }
+bmp-monochrome = { version = "1.0.0", default-features = false, optional = true }
 g2p = { version = "0.4", default-features = false, optional = true }
 arbitrary = { version = "0.4.7", default-features = false, optional = true, features = ["derive"]}
 
 [dev-dependencies]
 rand = "0.7.3"
 arbitrary = "0.4.7"
+base64 = "0.13.0"
 
 [features]
 bmp = ["bmp-monochrome"]
