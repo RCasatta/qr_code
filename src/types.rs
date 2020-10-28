@@ -186,18 +186,6 @@ impl Version {
     }
 }
 
-#[cfg(feature = "fuzz")]
-impl arbitrary::Arbitrary for Version {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
-        let v = u8::arbitrary(u)?;
-        match v {
-            1..=40 => Ok(Version::Normal(v as i16)),
-            //41..=44 => Ok(Version::Micro((v-40u8) as i16)),  not supported for now
-            _ => Err(arbitrary::Error::IncorrectFormat),
-        }
-    }
-}
-
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Mode indicator

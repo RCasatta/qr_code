@@ -20,7 +20,6 @@ arbitrary = { version = "0.4.7", default-features = false, optional = true, feat
 
 [dev-dependencies]
 rand = "0.7.3"
-arbitrary = "0.4.7"
 base64 = "0.13.0"
 
 [features]
