@@ -39,6 +39,7 @@ jobs:
         with:
           command: test
           args:  --verbose --all --all-features
+        if: ${{ matrix.rust != '1.34.0' }}  # arbitrary 0.4.7 not supported
       - uses: actions-rs/cargo@v1
         with:
           command: run
