@@ -1,3 +1,4 @@
+use crate::decode::BmpDecode;
 use crate::{QrCode, Version};
 
 impl arbitrary::Arbitrary for QrCode {
@@ -20,6 +21,28 @@ pub struct QrCodeData {
     pub data: Vec<u8>,
     /// mul
     pub mul_border: Option<(u8, u8)>,
+}
+
+impl QrCodeData {
+    /// used for fuzz tests
+    pub fn check(self) {
+        let crate::QrCodeData {
+            qr_code,
+            data,
+            mul_border,
+        } = self;
+        let base_bmp = qr_code.to_bmp();
+        let bmp = match mul_border {
+            None => base_bmp,
+            Some((mul, border)) => base_bmp
+                .mul(mul)
+                .and_then(|mul_bmp| mul_bmp.add_white_border(border))
+                .unwrap_or(base_bmp)
+                .normalize(),
+        };
+        let decoded = bmp.decode().unwrap();
+        assert_eq!(data, decoded);
+    }
 }
 
 impl arbitrary::Arbitrary for QrCodeData {
@@ -57,24 +80,16 @@ impl arbitrary::Arbitrary for Version {
 
 #[cfg(test)]
 mod tests {
-    /*
-    #[test]
-    fn test_fuzz_base() {
-        let data = base64::decode("0///yigN//8RB///Ef9AFwcu/8ooDf//").unwrap();
-        let unstructured = arbitrary::Unstructured::new(&data[..]);
-        let data = QrCodeData::arbitrary_take_rest(unstructured).unwrap();
-        dbg!(data);
-    }
-    */
 
-    /*
     #[test]
     fn test_fuzz() {
-        use crate::decode::BmpDecode;
-        let data = include_bytes!("../test_data/crash-70ecec40327a1b122e0c3346e383de8154e66b73");
-        let code = crate::QrCode::new(data).unwrap();
-        let result = code.to_bmp().mul(2).add_white_border(2).normalize().decode().unwrap();
-        assert_eq!(result, data);
+        use arbitrary::Arbitrary;
+        let data = include_bytes!(
+            "../fuzz/artifacts/decode_check/crash-045dc09e6d00cfd6d3b3e9a4cfe5835e410c5fd1"
+        );
+        let unstructured = arbitrary::Unstructured::new(&data[..]);
+        let qr_code_data = crate::QrCodeData::arbitrary_take_rest(unstructured).unwrap();
+        qr_code_data.check();
     }
-    */
+
 }
