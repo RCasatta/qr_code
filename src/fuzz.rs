@@ -82,7 +82,7 @@ impl arbitrary::Arbitrary for Version {
 mod tests {
 
     #[test]
-    fn test_fuzz() {
+    fn test_fuzz_decode_check() {
         use arbitrary::Arbitrary;
         let data = include_bytes!(
             "../fuzz/artifacts/decode_check/crash-045dc09e6d00cfd6d3b3e9a4cfe5835e410c5fd1"
@@ -92,4 +92,11 @@ mod tests {
         qr_code_data.check();
     }
 
+    #[test]
+    fn test_fuzz_encode() {
+        let data = include_bytes!(
+            "../fuzz/artifacts/encode/crash-9ffe42701f80d18e9c114f1134b9d64045f7d5ce"
+        );
+        assert!(crate::QrCode::new(data).is_err());
+    }
 }
