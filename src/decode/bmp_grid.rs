@@ -24,12 +24,11 @@ pub trait BmpDecode {
 
 impl BmpDecode for bmp_monochrome::Bmp {
     fn decode(&self) -> Result<Vec<u8>, BmpError> {
-        let err = |_| BmpError::Generic;
-        let meta = read_format(&self).map_err(err)?;
+        let meta = read_format(&self).unwrap();
         let raw = read_data(&self, &meta);
-        let stream = codestream_ecc(&meta, raw).map_err(err)?;
+        let stream = codestream_ecc(&meta, raw).unwrap();
         let mut writer = Cursor::new(vec![]);
-        decode_payload(&meta, stream, &mut writer).map_err(err)?;
+        decode_payload(&meta, stream, &mut writer).unwrap();
         Ok(writer.into_inner())
     }
 }

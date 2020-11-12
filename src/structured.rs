@@ -169,6 +169,9 @@ impl SplittedQr {
     /// Creates a new `SplittedQr` if possible given `bytes` len and max QR code `version` to use
     pub fn new(bytes: Vec<u8>, version: i16) -> QrResult<Self> {
         let parity = bytes.iter().fold(0u8, |acc, &x| acc ^ x);
+        if version == 0 {
+            return Err(Structured(UnsupportedVersion(version)));
+        }
         let max_bytes = *MAX_BYTES
             .get(version as usize)
             .ok_or_else(|| Structured(UnsupportedVersion(version)))?;
@@ -188,7 +191,7 @@ impl SplittedQr {
 
     fn split_to_bits(&self) -> QrResult<Vec<Bits>> {
         let max_bytes = MAX_BYTES[self.version as usize];
-        if self.bytes.len() < max_bytes {
+        if self.total_qr == 1 {
             let bits = bits::encode_auto(&self.bytes, LEVEL)?;
             Ok(vec![bits])
         } else {
@@ -210,7 +213,7 @@ impl SplittedQr {
     }
 
     fn make_chunk(&self, i: usize, chunk: &[u8]) -> QrResult<Bits> {
-        //println!("chunk len : {}", chunk.len());
+        //println!("chunk len : {} version: {}", chunk.len(), self.version);
         //println!("chunk : {}", hex::encode(chunk) );
         let mut bits = Bits::new(Version::Normal(self.version));
         bits.push_mode_indicator(ExtendedMode::StructuredAppend)?;

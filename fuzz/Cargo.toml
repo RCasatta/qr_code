@@ -28,3 +28,9 @@ name = "decode_check"
 path = "fuzz_targets/decode_check.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "split_merge_rt"
+path = "fuzz_targets/split_merge_rt.rs"
+test = false
+doc = false

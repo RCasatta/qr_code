@@ -32,7 +32,7 @@ pub mod types;
 #[cfg(feature = "fuzz")]
 mod fuzz;
 #[cfg(feature = "fuzz")]
-pub use crate::fuzz::QrCodeData;
+pub use crate::fuzz::{split_merge_rt, QrCodeData};
 
 #[cfg(all(feature = "bmp", feature = "decode"))]
 pub mod decode;

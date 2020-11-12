@@ -147,6 +147,7 @@ where
             0 => break,
             1 => decode_numeric(meta, &mut ds, &mut writer),
             2 => decode_alpha(meta, &mut ds, &mut writer),
+            3 => decode_structured(meta, &mut ds, &mut writer),
             4 => decode_byte(meta, &mut ds, &mut writer),
             8 => decode_kanji(meta, &mut ds, &mut writer),
             7 => decode_eci(meta, &mut ds, &mut writer),
@@ -213,6 +214,19 @@ where
     Ok(())
 }
 
+fn decode_structured<W>(meta: &MetaData, ds: &mut CorrectedDataStream, writer: W) -> DeQRResult<()>
+where
+    W: Write,
+{
+    let _current = ds.take_bits(4);
+    let _total = ds.take_bits(4);
+    let _parity = ds.take_bits(8);
+    let _mode_bits = ds.take_bits(4);
+    //println!("decode_structured {}/{} parity:{} mode_bits:{}", current, total, parity,mode_bits);
+    decode_byte(meta, ds, writer)?;
+    Ok(())
+}
+
 fn decode_byte<W>(meta: &MetaData, ds: &mut CorrectedDataStream, mut writer: W) -> DeQRResult<()>
 where
     W: Write,
@@ -223,6 +237,7 @@ where
     };
 
     let count = ds.take_bits(nbits);
+    //println!("decode_byte version:{:?} count:{} bits_remaining:{}", meta.version, count, ds.bits_remaining());
     if ds.bits_remaining() < count * 8 {
         return Err(DeQRError::DataUnderflow)?;
     }

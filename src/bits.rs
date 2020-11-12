@@ -343,6 +343,7 @@ mod eci_tests {
 impl Bits {
     fn push_header(&mut self, mode: Mode, raw_data_len: usize) -> QrResult<()> {
         let length_bits = mode.length_bits_count(self.version);
+        //println!("push_header length_bits:{} raw_data_len:{}", length_bits, raw_data_len);
         self.reserve(length_bits + 4 + mode.data_bits_count(raw_data_len));
         self.push_mode_indicator(ExtendedMode::Data(mode))?;
         self.push_number_checked(length_bits, raw_data_len)?;
