@@ -36,6 +36,7 @@ pub use crate::fuzz::QrCodeData;
 
 #[cfg(all(feature = "bmp", feature = "decode"))]
 pub mod decode;
+pub mod structured;
 
 pub use crate::types::{Color, EcLevel, QrResult, Version};
 

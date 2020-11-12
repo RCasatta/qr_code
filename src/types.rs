@@ -1,6 +1,7 @@
 //! Type to support QR code encoding
 
 use crate::cast::As;
+use crate::structured::StructuredQrError;
 use std::cmp::{Ordering, PartialOrd};
 use std::default::Default;
 use std::fmt::{Display, Error, Formatter};
@@ -25,18 +26,21 @@ pub enum QrError {
 
     /// A character not belonging to the character set is found.
     InvalidCharacter,
+
+    ///
+    Structured(StructuredQrError),
 }
 
 impl Display for QrError {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        let msg = match *self {
-            QrError::DataTooLong => "data too long",
-            QrError::InvalidVersion => "invalid version",
-            QrError::UnsupportedCharacterSet => "unsupported character set",
-            QrError::InvalidEciDesignator => "invalid ECI designator",
-            QrError::InvalidCharacter => "invalid character",
-        };
-        fmt.write_str(msg)
+        match *self {
+            QrError::DataTooLong => fmt.write_str("data too long"),
+            QrError::InvalidVersion => fmt.write_str("invalid version"),
+            QrError::UnsupportedCharacterSet => fmt.write_str("unsupported character set"),
+            QrError::InvalidEciDesignator => fmt.write_str("invalid ECI designator"),
+            QrError::InvalidCharacter => fmt.write_str("invalid character"),
+            QrError::Structured(e) => write!(fmt, "{}", e),
+        }
     }
 }
 
