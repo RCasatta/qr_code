@@ -1,0 +1,30 @@
+name: Fuzz
+
+on: [push, pull_request]
+
+jobs:
+
+  fuzz:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        target: [decode_check, encode]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        id: cache-fuzz
+        with:
+          path: |
+            ~/.cargo/bin
+            fuzz/target
+            target
+          key: cache-${{ matrix.target }}-${{ hashFiles('**/Cargo.toml','**/Cargo.lock') }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          profile: minimal
+      - run: cargo install cargo-fuzz
+        if: steps.cache-fuzz.outputs.cache-hit != 'true'
+      - name: fuzz
+        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=60

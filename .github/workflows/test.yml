@@ -1,27 +1,8 @@
-name: qr_code
+name: Test and lint
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
-
-  cosmetics:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          profile: minimal
-          components: rustfmt, clippy
-      - name: fmt
-        run: cargo fmt -- --check
-      - name: clippy
-        run: cargo clippy -- -D warnings
 
   test:
     runs-on: ubuntu-20.04
@@ -53,18 +34,17 @@ jobs:
           command: run
           args:  --example decode_bmp --features bmp,decode
 
-  fuzz:
+  cosmetics:
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        target: [decode_check, encode]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           override: true
           profile: minimal
-      - run: cargo install cargo-fuzz
-      - name: fuzz
-        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=60
+          components: rustfmt, clippy
+      - name: fmt
+        run: cargo fmt -- --check
+      - name: clippy
+        run: cargo clippy -- -D warnings
