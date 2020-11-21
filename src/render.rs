@@ -16,7 +16,7 @@ impl QrCode {
         let mut line_full: String = (0..width + border as usize * 2)
             .map(|_| full_block)
             .collect();
-        line_full.push_str("\n");
+        line_full.push('\n');
 
         for _ in 0..(border + 1) / 2 {
             result.push_str(&line_full);
@@ -37,13 +37,13 @@ impl QrCode {
                 result.push_str(&blocks[val + inverted].to_string());
             }
             result.push_str(&border_blocks);
-            result.push_str("\n");
+            result.push('\n');
         }
         let odd = if height % 2 == 0 { 1 } else { 0 };
         for _ in 0..(border + odd) / 2 {
             result.push_str(&line_full);
         }
-        result.push_str("\n");
+        result.push('\n');
         result
     }
 

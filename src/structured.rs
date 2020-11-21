@@ -174,7 +174,7 @@ impl SplittedQr {
         }
         let max_bytes = *MAX_BYTES
             .get(version as usize)
-            .ok_or_else(|| Structured(UnsupportedVersion(version)))?;
+            .ok_or(Structured(UnsupportedVersion(version)))?;
         let extra = if bytes.len() % max_bytes == 0 { 0 } else { 1 };
         let total_qr = bytes.len() / max_bytes + extra;
         if total_qr > 16 {
