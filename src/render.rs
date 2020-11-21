@@ -3,21 +3,26 @@ use crate::{Color, QrCode};
 impl QrCode {
     /// Render the qr code in a utf-8 string (2x1 pixel per character)
     /// `inverted` toggle the foreground and background color
-    pub fn to_string(&self, inverted: bool) -> String {
+    pub fn to_string(&self, inverted: bool, border: u8) -> String {
         let mut result = String::new();
         let width = self.width();
-        let mut qr_code = self.clone().into_colors();
+        let qr_code = self.clone().into_colors();
         let height = qr_code.len() / width;
-        qr_code.extend(vec![Color::Light; width]);
 
         let inverted = if inverted { 0 } else { 4 };
         let blocks = ["█", "▀", "▄", " ", " ", "▄", "▀", "█"];
-        result.push_str("\n\n");
+        let full_block = blocks[inverted];
+        let border_blocks: String = (0..border).map(|_| full_block).collect();
+        let mut line_full: String = (0..width + border as usize * 2)
+            .map(|_| full_block)
+            .collect();
+        line_full.push_str("\n");
+
+        for _ in 0..(border + 1) / 2 {
+            result.push_str(&line_full);
+        }
         for i in (0..height).step_by(2) {
-            result.push_str(&format!(
-                "{}{}{}",
-                blocks[inverted], blocks[inverted], blocks[inverted]
-            ));
+            result.push_str(&border_blocks);
             for j in 0..width {
                 let start = i * width + j;
                 let val = match (
@@ -31,7 +36,12 @@ impl QrCode {
                 };
                 result.push_str(&blocks[val + inverted].to_string());
             }
+            result.push_str(&border_blocks);
             result.push_str("\n");
+        }
+        let odd = if height % 2 == 0 { 1 } else { 0 };
+        for _ in 0..(border + odd) / 2 {
+            result.push_str(&line_full);
         }
         result.push_str("\n");
         result
