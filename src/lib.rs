@@ -324,3 +324,23 @@ mod tests {
         assert_eq!(output_via_iter.as_slice(), output_via_index.as_slice());
     }
 }
+
+#[cfg(bench)]
+pub(crate) mod bench {
+    use super::{EcLevel, QrCode};
+
+    #[bench]
+    fn bench_qr_code_with_low_ecc(bencher: &mut test::Bencher) {
+        bencher.iter(|| {
+            let data = include_bytes!("../test_data/large_base64.in");
+
+            // Using `EcLevel::L` because otherwise the input data won't fit and we'll get
+            // `DataTooLong` error.
+            let qr_code = QrCode::with_error_correction_level(data, EcLevel::L).unwrap();
+
+            // The code below reads all the QR pixels - this is a haphazard attempt to ensure that
+            // the compiler won't optimize away generation of the data.
+            qr_code.iter().map(|b| if b { 1 } else { 0 }).sum::<usize>()
+        });
+    }
+}
