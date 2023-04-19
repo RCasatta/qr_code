@@ -716,8 +716,6 @@ mod optimize_tests {
 #[cfg(bench)]
 #[bench]
 fn bench_optimize(bencher: &mut test::Bencher) {
-    use crate::types::Version;
-
     let data = b"QR\x83R\x81[\x83h\x81i\x83L\x83\x85\x81[\x83A\x81[\x83\x8b\x83R\x81[\x83h\x81j\
                  \x82\xc6\x82\xcd\x81A1994\x94N\x82\xc9\x83f\x83\x93\x83\\\x81[\x82\xcc\x8aJ\
                  \x94\xad\x95\x94\x96\xe5\x81i\x8c\xbb\x8d\xdd\x82\xcd\x95\xaa\x97\xa3\x82\xb5\x83f\
@@ -736,7 +734,18 @@ fn bench_optimize(bencher: &mut test::Bencher) {
                  \x83}\x81[\x83g\x83t\x83H\x83\x93\x82\xcc\x95\x81\x8by\x82\xc8\x82\xc7\x82\xc9\
                  \x82\xe6\x82\xe8\x93\xfa\x96{\x82\xc9\x8c\xc0\x82\xe7\x82\xb8\x90\xa2\x8aE\x93I\
                  \x82\xc9\x95\x81\x8by\x82\xb5\x82\xc4\x82\xa2\x82\xe9\x81B";
-    bencher.iter(|| Parser::new(data).optimize(Version::Normal(15)));
+    bencher.iter(|| {
+        let version = Version::Normal(15);
+        let optimizer = Parser::new(data).optimize(version);
+
+        // The above only constructs the `optimizer`, but doesn't iterate over the `data`
+        // (so measuring the above ignores most of the parsing and optimization costs).
+        // Calling `total_encoded_len` is one arbitrary way to consume the `data` and produce
+        // optimized segmentation.  Like `QrCode::new`, `total_encoded_len` reads all fields
+        // of `Segment` - this seems like a desirable benching property (and is one reason
+        // why we don't consume the `Optimizer` via `Iterator::count`).
+        test::black_box(total_encoded_len(optimizer, version))
+    });
 }
 
 //}}}
