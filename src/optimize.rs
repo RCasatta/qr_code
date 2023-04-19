@@ -36,6 +36,15 @@ impl Segment {
 
         mode_bits_count + length_bits_count + data_bits_count
     }
+
+    /// Panics if `&self` is not a valid segment.
+    #[cfg(test)]
+    fn assert_invariants(&self) {
+        // TODO: Consider replacing `begin` and `end` fields with a single
+        // `range: std::ops::Range<usize>` field that would make it impossible
+        // to violate this invariant (well, except for `Range::is_empty`...).
+        assert!(self.begin < self.end);
+    }
 }
 
 //}}}
@@ -469,21 +478,102 @@ where
 mod optimize_tests {
     use crate::optimize::{total_encoded_len, Optimizer, Segment};
     use crate::types::{Mode, Version};
+    use std::cmp::Ordering;
+
+    /// Panics if `segments` are not consecutive (i.e. if there are gaps, or overlaps, or if the
+    /// segments are not ordered by their `begin` field).
+    fn assert_valid_segmentation(segments: &[Segment]) {
+        if segments.is_empty() {
+            return;
+        }
+
+        for segment in segments.iter() {
+            segment.assert_invariants();
+        }
+
+        let consecutive_pairs = segments[..(segments.len() - 1)]
+            .iter()
+            .zip(segments[1..].iter());
+        for (prev, next) in consecutive_pairs {
+            assert_eq!(prev.end, next.begin);
+        }
+    }
+
+    /// Panics if there exists an input that can be represented by `given` segments,
+    /// but that cannot be represented by `opt` segments.
+    fn assert_segmentation_equivalence(given: &[Segment], opt: &[Segment]) {
+        if given.is_empty() {
+            assert!(opt.is_empty());
+            return;
+        }
+        let begin = given.first().unwrap().begin;
+        let end = given.last().unwrap().end;
+
+        // Verify that `opt` covers the same range as `given`.
+        // (This assumes that contiguous coverage has already been verified by
+        // `assert_valid_segmentation`.)
+        assert!(!opt.is_empty());
+        assert_eq!(begin, opt.first().unwrap().begin);
+        assert_eq!(end, opt.last().unwrap().end);
+
+        // Verify that for each character, `opt` can represent all the characters that may be
+        // present in `given`.
+        for i in begin..end {
+            fn find_mode(segments: &[Segment], i: usize) {
+                segments
+                    .iter()
+                    .filter(|s| (s.begin <= i) && (i < s.end))
+                    .next()
+                    .expect("Expecting exactly one segment")
+                    .mode;
+            }
+            let given_mode = find_mode(&*given, i);
+            let opt_mode = find_mode(&*given, i);
+            match given_mode.partial_cmp(&opt_mode) {
+                Some(Ordering::Less | Ordering::Equal) => (),
+                _ => panic!(
+                    "Character #{} is {:?}, which {:?} may not represent",
+                    i, given_mode, opt_mode,
+                ),
+            }
+        }
+    }
 
     fn test_optimization_result(given: Vec<Segment>, expected: Vec<Segment>, version: Version) {
-        let prev_len = total_encoded_len(&given, version);
+        // Verify that the test input is valid.
+        assert_valid_segmentation(&*given);
+
+        // Verify that the test expectations are compatible with the test input.
+        assert_valid_segmentation(&*expected);
+        assert_segmentation_equivalence(&*given, &*expected);
+
         let opt_segs = Optimizer::new(given.iter().copied(), version).collect::<Vec<_>>();
-        let new_len = total_encoded_len(&opt_segs, version);
+
+        // Verify that the optimized segments are valid and can represent any input that
+        // the `given` segments can.
+        assert_valid_segmentation(&*opt_segs);
+        assert_segmentation_equivalence(&*given, &*opt_segs);
+
+        // Verify that optimization always produces a shorter result.
+        let prev_len = total_encoded_len(&*given, version);
+        let new_len = total_encoded_len(&*opt_segs, version);
         if given != opt_segs {
             assert!(prev_len > new_len, "{} > {}", prev_len, new_len);
         }
-        assert!(
-            opt_segs == expected,
-            "Optimization gave something better: {} < {} ({:?})",
-            new_len,
-            total_encoded_len(&expected, version),
-            opt_segs
-        );
+
+        // Verify that optimization produces result that is as short as `expected`.
+        if opt_segs != expected {
+            let expected_len = total_encoded_len(&expected, version);
+            let msg = match new_len.cmp(&expected_len) {
+                Ordering::Less => "Optimization gave something better than expected",
+                Ordering::Equal => "Optimization gave something different, but just as short",
+                Ordering::Greater => "Optimization gave something worse than expected",
+            };
+            panic!(
+                "{}: expected_len={}; optimized_len={}; opt_segs=({:?})",
+                msg, expected_len, new_len, opt_segs
+            );
+        }
     }
 
     #[test]
@@ -630,6 +720,170 @@ mod optimize_tests {
                 },
             ],
             Version::Normal(1),
+        );
+    }
+
+    #[test]
+    fn test_empty() {
+        test_optimization_result(vec![], vec![], Version::Normal(1));
+    }
+
+    /// This example shows that greedy merging strategy (used by `qr_code` v1.1.0) can give
+    /// suboptimal results for the following input: `"bytesbytesA1B2C3D4E5"`.  The greedy strategy
+    /// will always consider it (locally) beneficial to merge the initial `Mode::Byte` segment with
+    /// the subsequent single-char segment - this will result in representing the whole input
+    /// in a single `Mode::Byte` segment.  Better segmentation can be done by first merging all the
+    /// `Mode::Alphanumeric` and `Mode::Numeric` segments.
+    #[ignore]
+    #[test]
+    fn test_example_where_greedy_merging_is_suboptimal() {
+        let mut input = vec![Segment {
+            mode: Mode::Byte,
+            begin: 0,
+            end: 10,
+        }];
+        for _ in 0..5 {
+            for &mode in [Mode::Alphanumeric, Mode::Numeric].iter() {
+                let begin = input.last().unwrap().end;
+                let end = begin + 1;
+                input.push(Segment { mode, begin, end });
+            }
+        }
+        test_optimization_result(
+            input,
+            vec![
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 0,
+                    end: 10,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 10,
+                    end: 20,
+                },
+            ],
+            Version::Normal(40),
+        );
+    }
+
+    /// In this example merging 2 consecutive segments is always harmful, but merging many segments
+    /// may be beneficial.  This is because merging more than 2 segments saves additional header
+    /// bytes.
+    #[ignore]
+    #[test]
+    fn test_example_where_merging_two_consecutive_segments_is_always_harmful() {
+        let mut input = vec![];
+        for _ in 0..5 {
+            for &mode in [Mode::Byte, Mode::Alphanumeric].iter() {
+                let begin = input.last().map(|s: &Segment| s.end).unwrap_or_default();
+                let end = begin + 10;
+                input.push(Segment { mode, begin, end });
+            }
+        }
+        test_optimization_result(
+            input,
+            vec![
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 0,
+                    end: 90,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 90,
+                    end: 100,
+                },
+            ],
+            Version::Normal(40),
+        );
+    }
+
+    #[ignore]
+    #[test]
+    fn test_optimize_base64() {
+        let input: &[u8] = include_bytes!("../test_data/large_base64.in");
+        let input: Vec<Segment> = super::Parser::new(input).collect();
+        test_optimization_result(
+            input,
+            vec![
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 0,
+                    end: 334,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 334,
+                    end: 349,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 349,
+                    end: 387,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 387,
+                    end: 402,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 402,
+                    end: 850,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 850,
+                    end: 866,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 866,
+                    end: 1146,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 1146,
+                    end: 1162,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 1162,
+                    end: 2474,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 2474,
+                    end: 2489,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 2489,
+                    end: 2618,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 2618,
+                    end: 2641,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 2641,
+                    end: 2707,
+                },
+                Segment {
+                    mode: Mode::Alphanumeric,
+                    begin: 2707,
+                    end: 2722,
+                },
+                Segment {
+                    mode: Mode::Byte,
+                    begin: 2722,
+                    end: 2880,
+                },
+            ],
+            Version::Normal(40),
         );
     }
 
