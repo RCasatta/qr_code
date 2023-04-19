@@ -153,7 +153,7 @@ fn test_push_number() {
     );
 }
 
-#[cfg(feature = "bench")]
+#[cfg(bench)]
 #[bench]
 fn bench_push_splitted_bytes(bencher: &mut test::Bencher) {
     bencher.iter(|| {
@@ -1084,7 +1084,7 @@ mod encode_auto_tests {
     }
 }
 
-#[cfg(feature = "bench")]
+#[cfg(bench)]
 #[bench]
 fn bench_find_min_version(bencher: &mut test::Bencher) {
     use test::black_box;

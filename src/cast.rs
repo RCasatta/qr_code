@@ -1,3 +1,4 @@
+#[cfg(debug_assertions)]
 use std::convert::TryInto;
 
 // TODO remove this, use try_into wher as_* is used

@@ -14,10 +14,19 @@
 )]
 #![cfg_attr(feature = "bench", doc(include = "../README.md"))]
 // ^ make sure we can test our README.md.
+// TODO: Avoid using `feature = "bench"` above.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 // No `unsafe` please.  If `unsafe` is really needed, then please
 // consider encapsulating it in a separate crates.io crate.
 #![forbid(unsafe_code)]
+// Using `#[bench]`, `test::Bencher`, and `cargo bench` requires opting into the unstable `test`
+// feature.  See https://github.com/rust-lang/rust/issues/50297 for more details.  Benchmarks
+// features are only available in the nightly versions of the Rust compiler - to keep stable
+// builds working we only enable benching behind the "bench" config.  To run the benchmarks
+// use: `RUSTFLAGS='--cfg=bench' cargo +nightly bench --all-features`
+#![cfg_attr(bench, feature(test))]
+#[cfg(bench)]
+extern crate test;
 
 // Re-exported dependencies.
 #[cfg(feature = "bmp")]

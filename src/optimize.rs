@@ -705,7 +705,7 @@ mod optimize_tests {
     }
 }
 
-#[cfg(feature = "bench")]
+#[cfg(bench)]
 #[bench]
 fn bench_optimize(bencher: &mut test::Bencher) {
     use crate::types::Version;
