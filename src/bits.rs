@@ -3,7 +3,7 @@
 use std::cmp::min;
 
 use crate::cast::{As, Truncate};
-use crate::optimize::{total_encoded_len, Optimizer, Parser, Segment};
+use crate::optimize::{optimize_segmentation, total_encoded_len, Parser, Segment};
 use crate::types::{EcLevel, Mode, QrError, QrResult, Version};
 
 //------------------------------------------------------------------------------
@@ -938,8 +938,9 @@ impl Bits {
     ///
     /// Returns `Err(QrError::DataTooLong)` on overflow.
     pub fn push_optimal_data(&mut self, data: &[u8]) -> QrResult<()> {
-        let segments = Parser::new(data).optimize(self.version);
-        self.push_segments(data, segments)
+        let segments: Vec<Segment> = Parser::new(data).collect();
+        let segments = optimize_segmentation(&segments, self.version);
+        self.push_segments(data, segments.into_iter())
     }
 }
 
@@ -1005,8 +1006,8 @@ mod encode_tests {
 pub fn encode_auto(data: &[u8], ec_level: EcLevel) -> QrResult<Bits> {
     let segments = Parser::new(data).collect::<Vec<Segment>>();
     for version in &[Version::Normal(9), Version::Normal(26), Version::Normal(40)] {
-        let opt_segments = Optimizer::new(segments.iter().cloned(), *version).collect::<Vec<_>>();
-        let total_len = total_encoded_len(&opt_segments, *version);
+        let opt_segments = optimize_segmentation(&segments, *version);
+        let total_len = total_encoded_len(&*opt_segments, *version);
         let data_capacity = version
             .fetch(ec_level, &DATA_LENGTHS)
             .expect("invalid DATA_LENGTHS");

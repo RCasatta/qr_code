@@ -116,7 +116,7 @@ mod tests {
         let data = include_bytes!(
             "../fuzz/artifacts/encode/crash-9ffe42701f80d18e9c114f1134b9d64045f7d5ce"
         );
-        assert!(crate::QrCode::new(data).is_err());
+        assert!(crate::QrCode::new(data).is_ok());
     }
 
     #[test]

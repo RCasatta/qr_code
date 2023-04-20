@@ -284,6 +284,9 @@ impl Mode {
             None => Mode::Byte,
         }
     }
+
+    pub(crate) const ALL_MODES: &'static [Mode] =
+        &[Mode::Numeric, Mode::Alphanumeric, Mode::Byte, Mode::Kanji];
 }
 
 impl PartialOrd for Mode {

@@ -38,7 +38,6 @@ impl Segment {
     }
 
     /// Panics if `&self` is not a valid segment.
-    #[cfg(test)]
     fn assert_invariants(&self) {
         // TODO: It would be great if it would be impossible to construct an invalid `Segment` -
         // either by 1) making the fields private and only allowing construction via a public,
@@ -377,90 +376,263 @@ mod parse_tests {
     }
 }
 
-/// Optimize the segments by combining adjacent segments when possible.
-pub struct Optimizer<I> {
-    parser: I,
-    last_segment: Segment,
-    last_segment_size: usize,
-    version: Version,
-    ended: bool,
-}
+/// Implementation of a shortest path algorithm in a graph where:
+///
+/// * Graph nodes represent an encoding that covers an initial slice of segments and ends with a
+///   given `Mode`.  For an input of N segments, the graph will contain at most 4 * N nodes (maybe
+///   less, because some reencodings are not possible - e.g. it is not possible to reencode a
+///   `Byte` segment as `Numeric`).
+/// * Graph edges connect encodings that cover N segments with encodings
+///   that cover 1 additional segment.  Because of possible `Mode` transitions
+///   nodes can have up to 4 incoming edges and up to 4 outgoing edges.
+///
+/// The algorithm follows the relaxation approach of the
+/// https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm, but considers the nodes and edges in a
+/// fixed order (rather than using a priority queue).  This is possible because of the constrained,
+/// structured shape of the graph we are working with.
+mod shortest_path {
+    use super::Segment;
+    use crate::types::{Mode, Version};
+    use std::cmp::{Ordering, PartialOrd};
 
-impl<I: Iterator<Item = Segment>> Optimizer<I> {
-    /// Optimize the segments by combining adjacent segments when possible.
-    ///
-    /// Currently this method uses a greedy algorithm by combining segments from
-    /// left to right until the new segment is longer than before. This method
-    /// does *not* use Annex J from the ISO standard.
-    ///
-    pub fn new(mut segments: I, version: Version) -> Self {
-        match segments.next() {
-            None => Self {
-                parser: segments,
-                last_segment: Segment {
-                    mode: Mode::Numeric,
-                    begin: 0,
-                    end: 0,
-                },
-                last_segment_size: 0,
-                version,
-                ended: true,
-            },
-            Some(segment) => Self {
-                parser: segments,
-                last_segment: segment,
-                last_segment_size: segment.encoded_len(version),
-                version,
-                ended: false,
-            },
-        }
+    #[derive(Clone)]
+    struct Predecessor {
+        index_of_segment: usize,
+        mode: Mode,
     }
-}
 
-impl<'a> Parser<'a> {
-    /// Optimize the segments by combining adjacent segments when possible.
-    pub fn optimize(self, version: Version) -> Optimizer<Parser<'a>> {
-        Optimizer::new(self, version)
+    #[derive(Clone)]
+    struct ShortestPath {
+        length: usize,
+        predecessor: Option<Predecessor>,
     }
-}
 
-impl<I: Iterator<Item = Segment>> Iterator for Optimizer<I> {
-    type Item = Segment;
+    pub struct AlgorithmState<'a> {
+        /// Stores shortest paths - see `get_shortest_path` and `get_path_index` for more details.
+        paths: Vec<Option<ShortestPath>>,
 
-    fn next(&mut self) -> Option<Segment> {
-        if self.ended {
-            return None;
+        /// Initial segmentation that we are trying to improve.
+        segments: &'a [Segment],
+
+        /// QR code version that determines how many bits are needed to encode a given `Segment`.
+        version: Version,
+    }
+
+    /// Finds the index into `AlgorithmState::paths` for a path that:
+    /// * Includes all the `0..=index_of_segment` segments from `AlgorithmState::segments`
+    ///   (this range is inclusive on both ends).
+    /// * Encodes the last segment (i.e. the one at `index_of_segment`) using `mode`
+    fn get_path_index(index_of_segment: usize, mode: Mode) -> usize {
+        index_of_segment * Mode::ALL_MODES.len() + (mode as usize)
+    }
+
+    impl<'a> AlgorithmState<'a> {
+        /// Gets the shortest path that has been computed earlier.
+        ///
+        /// * For more details about `ending_mode` and `index_of_segment` see the documentation
+        ///   of `get_path_index`
+        /// * For more details about the return value see the documentation of
+        ///   `compute_shortest_path`.
+        fn get_shortest_path(
+            &self,
+            index_of_segment: usize,
+            ending_mode: Mode,
+        ) -> &Option<ShortestPath> {
+            &self.paths[get_path_index(index_of_segment, ending_mode)]
         }
 
-        loop {
-            match self.parser.next() {
-                None => {
-                    self.ended = true;
-                    return Some(self.last_segment);
-                }
-                Some(segment) => {
-                    let seg_size = segment.encoded_len(self.version);
+        fn get_end_of_predecessor(&self, predecessor: &Option<Predecessor>) -> usize {
+            match predecessor {
+                None => 0,
+                Some(predecessor) => self.segments[predecessor.index_of_segment].end,
+            }
+        }
 
-                    let new_segment = Segment {
-                        mode: self.last_segment.mode.max(segment.mode),
-                        begin: self.last_segment.begin,
-                        end: segment.end,
-                    };
-                    let new_size = new_segment.encoded_len(self.version);
+        /// Computes the shortest path that
+        /// * Includes all the segments in `self.segments[0..=index_of_segment]`
+        /// * Encodes the last segment (i.e. the one at `index_of_segment`) using `desired_mode`
+        ///
+        /// Assumes that shortest paths for all earlier segments (i.e. ones before
+        /// `index_of_segment) have already been computed and memoized in `self.paths`.
+        ///
+        /// Returns `None` if the segment at `index_of_segment` can't be encoded using
+        /// `desired_mode` (e.g. contents of `Mode::Byte` segment can't be reencoded using
+        /// `Mode::Numeric` - see also the documentation of `PartialOrd` impl for `Mode`).
+        fn compute_shortest_path(
+            &self,
+            index_of_segment: usize,
+            desired_mode: Mode,
+        ) -> Option<ShortestPath> {
+            let curr_segment = self.segments[index_of_segment];
 
-                    if self.last_segment_size + seg_size >= new_size {
-                        self.last_segment = new_segment;
-                        self.last_segment_size = new_size;
+            // Check if `curr_segment` can be reencoded using `desired_mode`.
+            match curr_segment.mode.partial_cmp(&desired_mode) {
+                None | Some(Ordering::Greater) => return None,
+                Some(Ordering::Less) | Some(Ordering::Equal) => (),
+            }
+
+            let length_of_reencoding_curr_segment_in_desired_mode = {
+                let reencoded_segment = Segment {
+                    begin: curr_segment.begin,
+                    end: curr_segment.end,
+                    mode: desired_mode,
+                };
+                reencoded_segment.encoded_len(self.version)
+            };
+
+            // Handle the case when there are no predecessors.
+            if index_of_segment == 0 {
+                return Some(ShortestPath {
+                    length: length_of_reencoding_curr_segment_in_desired_mode,
+                    predecessor: None,
+                });
+            }
+
+            // Find the predecessor with the best mode / compute the shortest path.
+            let prev_index = index_of_segment - 1;
+            Mode::ALL_MODES
+                .iter()
+                .filter_map(|&prev_mode| {
+                    self.get_shortest_path(prev_index, prev_mode)
+                        .as_ref()
+                        .map(|prev_path| (prev_mode, prev_path))
+                })
+                .map(|(prev_mode, prev_path)| {
+                    if prev_mode == desired_mode {
+                        let merged_length = {
+                            let merged_segment = Segment {
+                                begin: self.get_end_of_predecessor(&prev_path.predecessor),
+                                end: curr_segment.end,
+                                mode: desired_mode,
+                            };
+                            merged_segment.encoded_len(self.version)
+                        };
+                        let length_up_to_merged_segment = match prev_path.predecessor.as_ref() {
+                            None => 0,
+                            Some(predecessor) => {
+                                self.get_shortest_path(
+                                    predecessor.index_of_segment,
+                                    predecessor.mode,
+                                )
+                                .as_ref()
+                                .expect("Predecessors should point at a valid path")
+                                .length
+                            }
+                        };
+                        ShortestPath {
+                            length: length_up_to_merged_segment + merged_length,
+                            predecessor: prev_path.predecessor.clone(),
+                        }
                     } else {
-                        let old_segment = self.last_segment;
-                        self.last_segment = segment;
-                        self.last_segment_size = seg_size;
-                        return Some(old_segment);
+                        ShortestPath {
+                            length: prev_path.length
+                                + length_of_reencoding_curr_segment_in_desired_mode,
+                            predecessor: Some(Predecessor {
+                                index_of_segment: prev_index,
+                                mode: prev_mode,
+                            }),
+                        }
                     }
+                })
+                .min_by_key(|path| path.length)
+        }
+
+        /// Runs the shortest-path algorithm, fully populating `Self::paths`.
+        pub fn find_shortest_paths(segments: &'a [Segment], version: Version) -> Self {
+            let mut this = AlgorithmState::<'a> {
+                segments,
+                paths: vec![None; segments.len() * Mode::ALL_MODES.len()],
+                version,
+            };
+            for index_of_segment in 0..segments.len() {
+                for &mode in Mode::ALL_MODES {
+                    this.paths[get_path_index(index_of_segment, mode)] =
+                        this.compute_shortest_path(index_of_segment, mode);
                 }
+            }
+            this
+        }
+
+        /// Constructs the best segmentation from prepopulated `self.paths`.
+        pub fn construct_best_segmentation(&self) -> Vec<Segment> {
+            let mut result = Vec::new();
+
+            // Start at the last segment (since we want the best encoding
+            // that covers all of the input segments) and find the mode that
+            // results in the shortest path for the last segment.
+            let mut curr_index_of_segment = self.segments.len() - 1;
+            let (mut best_mode, mut shortest_path) = Mode::ALL_MODES
+                .iter()
+                .filter_map(|&mode| {
+                    self.get_shortest_path(curr_index_of_segment, mode)
+                        .as_ref()
+                        .map(|shortest_path| (mode, shortest_path))
+                })
+                .min_by_key(|(_mode, path)| path.length)
+                .expect("At least one path should always exist");
+
+            // Work backwards to construct the shortest path based on the predecessor information.
+            loop {
+                result.push(Segment {
+                    begin: self.get_end_of_predecessor(&shortest_path.predecessor),
+                    end: self.segments[curr_index_of_segment].end,
+                    mode: best_mode,
+                });
+                match shortest_path.predecessor.as_ref() {
+                    None => {
+                        result.reverse();
+                        return result;
+                    }
+                    Some(predecessor) => {
+                        curr_index_of_segment = predecessor.index_of_segment;
+                        best_mode = predecessor.mode;
+                        shortest_path = self
+                            .get_shortest_path(curr_index_of_segment, best_mode)
+                            .as_ref()
+                            .expect("Predecessors should point at valid paths");
+                    }
+                };
             }
         }
     }
+}
+
+/// Panics if `segments` are not consecutive (i.e. if there are gaps, or overlaps, or if the
+/// segments are not ordered by their `begin` field).
+fn assert_valid_segmentation(segments: &[Segment]) {
+    if segments.is_empty() {
+        return;
+    }
+
+    for segment in segments.iter() {
+        segment.assert_invariants();
+    }
+
+    let consecutive_pairs = segments[..(segments.len() - 1)]
+        .iter()
+        .zip(segments[1..].iter());
+    for (prev, next) in consecutive_pairs {
+        assert_eq!(prev.end, next.begin, "Non-adjacent segments");
+    }
+}
+
+/// Optimize the segments by combining segments when possible.
+///
+/// Optimization considers all possible segmentations where each of the input `segments`
+/// may have been reencoded into a different mode (and where adjacent, same-mode segments are
+/// merged).  The shortest of the considered segmentations is returned.  The implementation uses a
+/// shortest-path algorithm that runs in O(N) time and uses additional O(N) memory.
+///
+/// This function may panic if `segments` do not represent a valid segmentation
+/// (e.g. if there are gaps between segments, if the segments overlap, etc.).
+pub fn optimize_segmentation(segments: &[Segment], version: Version) -> Vec<Segment> {
+    assert_valid_segmentation(segments);
+    if segments.is_empty() {
+        return Vec::new();
+    }
+
+    shortest_path::AlgorithmState::find_shortest_paths(segments, version)
+        .construct_best_segmentation()
 }
 
 /// Computes the total encoded length of all segments.
@@ -477,28 +649,9 @@ where
 
 #[cfg(test)]
 mod optimize_tests {
-    use crate::optimize::{total_encoded_len, Optimizer, Segment};
+    use super::{assert_valid_segmentation, optimize_segmentation, total_encoded_len, Segment};
     use crate::types::{Mode, Version};
     use std::cmp::Ordering;
-
-    /// Panics if `segments` are not consecutive (i.e. if there are gaps, or overlaps, or if the
-    /// segments are not ordered by their `begin` field).
-    fn assert_valid_segmentation(segments: &[Segment]) {
-        if segments.is_empty() {
-            return;
-        }
-
-        for segment in segments.iter() {
-            segment.assert_invariants();
-        }
-
-        let consecutive_pairs = segments[..(segments.len() - 1)]
-            .iter()
-            .zip(segments[1..].iter());
-        for (prev, next) in consecutive_pairs {
-            assert_eq!(prev.end, next.begin);
-        }
-    }
 
     /// Panics if there exists an input that can be represented by `given` segments,
     /// but that cannot be represented by `opt` segments.
@@ -531,7 +684,7 @@ mod optimize_tests {
             let given_mode = find_mode(&*given, i);
             let opt_mode = find_mode(&*given, i);
             match given_mode.partial_cmp(&opt_mode) {
-                Some(Ordering::Less | Ordering::Equal) => (),
+                Some(Ordering::Less) | Some(Ordering::Equal) => (),
                 _ => panic!(
                     "Character #{} is {:?}, which {:?} may not represent",
                     i, given_mode, opt_mode,
@@ -548,7 +701,7 @@ mod optimize_tests {
         assert_valid_segmentation(&*expected);
         assert_segmentation_equivalence(&*given, &*expected);
 
-        let opt_segs = Optimizer::new(given.iter().copied(), version).collect::<Vec<_>>();
+        let opt_segs = optimize_segmentation(given.as_slice(), version);
 
         // Verify that the optimized segments are valid and can represent any input that
         // the `given` segments can.
@@ -735,7 +888,6 @@ mod optimize_tests {
     /// the subsequent single-char segment - this will result in representing the whole input
     /// in a single `Mode::Byte` segment.  Better segmentation can be done by first merging all the
     /// `Mode::Alphanumeric` and `Mode::Numeric` segments.
-    #[ignore]
     #[test]
     fn test_example_where_greedy_merging_is_suboptimal() {
         let mut input = vec![Segment {
@@ -771,7 +923,6 @@ mod optimize_tests {
     /// In this example merging 2 consecutive segments is always harmful, but merging many segments
     /// may be beneficial.  This is because merging more than 2 segments saves additional header
     /// bytes.
-    #[ignore]
     #[test]
     fn test_example_where_merging_two_consecutive_segments_is_always_harmful() {
         let mut input = vec![];
@@ -800,7 +951,6 @@ mod optimize_tests {
         );
     }
 
-    #[ignore]
     #[test]
     fn test_optimize_base64() {
         let input: &[u8] = include_bytes!("../test_data/large_base64.in");
@@ -970,20 +1120,14 @@ mod optimize_tests {
 
 #[cfg(bench)]
 mod bench {
-    use super::{total_encoded_len, Parser};
+    use super::{optimize_segmentation, total_encoded_len, Parser, Segment};
     use crate::Version;
 
     fn bench_optimize(data: &[u8], version: Version, bencher: &mut test::Bencher) {
         bencher.iter(|| {
-            let optimizer = Parser::new(data).optimize(version);
-
-            // The above only constructs the `optimizer`, but doesn't iterate over the `data`
-            // (so measuring the above ignores most of the parsing and optimization costs).
-            // Calling `total_encoded_len` is one arbitrary way to consume the `data` and produce
-            // optimized segmentation.  Like `QrCode::new`, `total_encoded_len` reads all fields
-            // of `Segment` - this seems like a desirable benching property (and is one reason
-            // why we don't consume the `Optimizer` via `Iterator::count`).
-            test::black_box(total_encoded_len(optimizer, version))
+            let segments: Vec<Segment> = Parser::new(data).collect();
+            let segments = optimize_segmentation(segments.as_slice(), version);
+            test::black_box(total_encoded_len(segments, version))
         });
     }
 
