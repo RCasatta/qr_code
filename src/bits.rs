@@ -1006,7 +1006,7 @@ pub fn encode_auto(data: &[u8], ec_level: EcLevel) -> QrResult<Bits> {
     let segments = Parser::new(data).collect::<Vec<Segment>>();
     for version in &[Version::Normal(9), Version::Normal(26), Version::Normal(40)] {
         let opt_segments = Optimizer::new(segments.iter().cloned(), *version).collect::<Vec<_>>();
-        let total_len = total_encoded_len(&*opt_segments, *version);
+        let total_len = total_encoded_len(&opt_segments, *version);
         let data_capacity = version
             .fetch(ec_level, &DATA_LENGTHS)
             .expect("invalid DATA_LENGTHS");

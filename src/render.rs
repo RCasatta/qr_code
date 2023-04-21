@@ -34,7 +34,7 @@ impl QrCode {
                     (Color::Dark, Color::Light) => 2,
                     (Color::Dark, Color::Dark) => 3,
                 };
-                result.push_str(&blocks[val + inverted].to_string());
+                result.push_str(blocks[val + inverted]);
             }
             result.push_str(&border_blocks);
             result.push('\n');

@@ -10,6 +10,7 @@
     clippy::must_use_candidate, // This is just annoying.
     clippy::use_self, // Rust 1.33 doesn't support Self::EnumVariant, let's try again in 1.37.
     clippy::match_like_matches_macro, // MSRV is lower than what's needed for matches!
+    clippy::wrong_self_convention, // TODO fix code and remove
 )]
 #![cfg_attr(feature = "bench", doc(include = "../README.md"))]
 // ^ make sure we can test our README.md.
@@ -149,10 +150,10 @@ impl QrCode {
     pub fn with_bits(bits: bits::Bits, ec_level: EcLevel) -> QrResult<Self> {
         let version = bits.version();
         let data = bits.into_bytes();
-        let (encoded_data, ec_data) = ec::construct_codewords(&*data, version, ec_level)?;
+        let (encoded_data, ec_data) = ec::construct_codewords(&data, version, ec_level)?;
         let mut canvas = canvas::Canvas::new(version, ec_level);
         canvas.draw_all_functional_patterns();
-        canvas.draw_data(&*encoded_data, &*ec_data);
+        canvas.draw_data(&encoded_data, &ec_data);
         let canvas = canvas.apply_best_mask();
         Ok(Self {
             content: canvas.into_colors(),
@@ -202,7 +203,7 @@ impl QrCode {
 
     /// Returns an iterator over QR code vector of colors.
     pub fn iter(&self) -> QrCodeIterator {
-        QrCodeIterator::new(&self)
+        QrCodeIterator::new(self)
     }
 
     /// Converts the QR code to a vector of colors.

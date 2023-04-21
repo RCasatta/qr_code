@@ -1053,7 +1053,7 @@ pub fn is_functional(version: Version, width: i16, x: i16, y: i16) -> bool {
                 true
             } else if a == 1 {
                 false
-            } else if 2 <= a && a <= 6 {
+            } else if (2..=6).contains(&a) {
                 (width - 7 - x).abs() <= 2 && (width - 7 - y).abs() <= 2
             } else {
                 let positions = ALIGNMENT_PATTERN_POSITIONS[(a - 7).as_usize()];
@@ -1437,7 +1437,7 @@ impl Canvas {
                 } else {
                     Color::Dark
                 };
-                while let Some((x, y)) = coords.next() {
+                for (x, y) in coords.by_ref() {
                     let r = self.get_mut(x, y);
                     if *r == Module::Empty {
                         *r = Module::Unmasked(color);

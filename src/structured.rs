@@ -86,8 +86,7 @@ pub fn merge_qrs(mut bytes: Vec<Vec<u8>>) -> QrResult<Vec<u8>> {
     vec_structured.sort_by(|a, b| a.seq.cmp(&b.seq)); // allows to merge out of order by reordering here
     let result: Vec<u8> = vec_structured
         .iter()
-        .map(|q| q.content.clone())
-        .flatten()
+        .flat_map(|q| q.content.clone())
         .collect();
 
     let final_parity = result.iter().fold(0u8, |acc, &x| acc ^ x);
@@ -141,7 +140,7 @@ impl TryFrom<Vec<u8>> for StructuredQr {
         if value.len() < end {
             return Err(Structured(LengthMismatch(end, value.len())));
         }
-        let content = (&value[from..end]).to_vec();
+        let content = value[from..end].to_vec();
         //TODO check padding
 
         Ok(StructuredQr {
@@ -208,7 +207,7 @@ impl SplittedQr {
     pub fn split(&self) -> QrResult<Vec<QrCode>> {
         self.split_to_bits()?
             .into_iter()
-            .map(|bits| Ok(QrCode::with_bits(bits, LEVEL)?))
+            .map(|bits| QrCode::with_bits(bits, LEVEL))
             .collect()
     }
 
@@ -307,7 +306,7 @@ mod tests {
         let result = merge_qrs(vec);
         assert_eq!(result.unwrap_err().to_string(), AtLeast2Pieces.to_string());
 
-        let vec = vec![first.clone(), full_content.clone()];
+        let vec = vec![first.clone(), full_content];
         let result = merge_qrs(vec);
         assert_eq!(
             result.unwrap_err().to_string(),
@@ -320,7 +319,7 @@ mod tests {
         let result = merge_qrs(vec);
         assert_eq!(result.unwrap_err().to_string(), MissingParts.to_string());
 
-        let vec = vec![first.clone(), first_mut.clone(), second.clone()];
+        let vec = vec![first, first_mut.clone(), second];
         let result = merge_qrs(vec);
         assert_eq!(
             result.unwrap_err().to_string(),
@@ -355,7 +354,7 @@ mod tests {
         for _ in 0..1_000 {
             let len = rng.gen_range(100, 4000);
             let ver = rng.gen_range(10, 20);
-            let data = (&random_bytes[0..len]).to_vec();
+            let data = random_bytes[0..len].to_vec();
             let split_qr = SplittedQr::new(data.clone(), ver).unwrap();
             let bits = split_qr.split_to_bits().unwrap();
             if bits.len() > 1 {

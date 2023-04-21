@@ -132,7 +132,7 @@ pub fn construct_codewords(
     let ec_bytes = version.fetch(ec_level, &EC_BYTES_PER_BLOCK)?;
     let ec_codes = blocks
         .iter()
-        .map(|block| create_error_correction_code(*block, ec_bytes))
+        .map(|block| create_error_correction_code(block, ec_bytes))
         .collect::<Vec<Vec<u8>>>();
 
     let blocks_vec = interleave(&blocks);
