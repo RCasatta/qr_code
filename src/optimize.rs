@@ -630,8 +630,13 @@ pub fn optimize_segmentation(segments: &[Segment], version: Version) -> Vec<Segm
         return Vec::new();
     }
 
-    shortest_path::AlgorithmState::find_shortest_paths(segments, version)
-        .construct_best_segmentation()
+    let optimized_segments = shortest_path::AlgorithmState::find_shortest_paths(segments, version)
+        .construct_best_segmentation();
+
+    #[cfg(fuzzing)]
+    optimize_test_helpers::assert_valid_optimization(&segments, &*optimized_segments, version);
+
+    optimized_segments
 }
 
 /// Computes the total encoded length of all segments.
@@ -646,15 +651,15 @@ where
         .sum()
 }
 
-#[cfg(test)]
-mod optimize_tests {
-    use super::{assert_valid_segmentation, optimize_segmentation, total_encoded_len, Segment};
+#[cfg(any(fuzzing, test))]
+mod optimize_test_helpers {
+    use super::{assert_valid_segmentation, total_encoded_len, Segment};
     use crate::types::{Mode, Version};
     use std::cmp::Ordering;
 
     /// Panics if there exists an input that can be represented by `given` segments,
     /// but that cannot be represented by `opt` segments.
-    fn assert_segmentation_equivalence(given: &[Segment], opt: &[Segment]) {
+    pub fn assert_segmentation_equivalence(given: &[Segment], opt: &[Segment]) {
         if given.is_empty() {
             assert!(opt.is_empty());
             return;
@@ -692,39 +697,60 @@ mod optimize_tests {
         }
     }
 
+    /// Panics if `optimized` is not an improved representation of `input`.
+    pub fn assert_valid_optimization(input: &[Segment], optimized: &[Segment], version: Version) {
+        assert_valid_segmentation(input);
+        assert_valid_segmentation(optimized);
+        assert_segmentation_equivalence(input, optimized);
+
+        let input_len = total_encoded_len(input, version);
+        let optimized_len = total_encoded_len(optimized, version);
+        assert!(optimized_len <= input_len);
+
+        let single_bytes_segment_len = if input.is_empty() {
+            0
+        } else {
+            Segment {
+                begin: input.first().unwrap().begin,
+                end: input.last().unwrap().end,
+                mode: Mode::Byte,
+            }
+            .encoded_len(version)
+        };
+        assert!(optimized_len <= single_bytes_segment_len);
+    }
+}
+
+#[cfg(test)]
+mod optimize_tests {
+    use super::optimize_test_helpers::*;
+    use super::{assert_valid_segmentation, optimize_segmentation, total_encoded_len, Segment};
+    use crate::types::{Mode, Version};
+    use std::cmp::Ordering;
+
     fn test_optimization_result(given: Vec<Segment>, expected: Vec<Segment>, version: Version) {
         // Verify that the test input is valid.
-        assert_valid_segmentation(&*given);
+        assert_valid_segmentation(&given);
 
         // Verify that the test expectations are compatible with the test input.
-        assert_valid_segmentation(&*expected);
-        assert_segmentation_equivalence(&*given, &*expected);
+        assert_valid_segmentation(&expected);
+        assert_segmentation_equivalence(&given, &expected);
 
         let opt_segs = optimize_segmentation(given.as_slice(), version);
-
-        // Verify that the optimized segments are valid and can represent any input that
-        // the `given` segments can.
-        assert_valid_segmentation(&*opt_segs);
-        assert_segmentation_equivalence(&*given, &*opt_segs);
-
-        // Verify that optimization always produces a shorter result.
-        let prev_len = total_encoded_len(&*given, version);
-        let new_len = total_encoded_len(&*opt_segs, version);
-        if given != opt_segs {
-            assert!(prev_len > new_len, "{} > {}", prev_len, new_len);
-        }
+        assert_valid_optimization(&given, &opt_segs, version);
 
         // Verify that optimization produces result that is as short as `expected`.
         if opt_segs != expected {
+            let actual_len = total_encoded_len(&opt_segs, version);
             let expected_len = total_encoded_len(&expected, version);
-            let msg = match new_len.cmp(&expected_len) {
+            let msg = match actual_len.cmp(&expected_len) {
                 Ordering::Less => "Optimization gave something better than expected",
                 Ordering::Equal => "Optimization gave something different, but just as short",
                 Ordering::Greater => "Optimization gave something worse than expected",
             };
             panic!(
-                "{}: expected_len={}; optimized_len={}; opt_segs=({:?})",
-                msg, expected_len, new_len, opt_segs
+                "{}: expected_len={}; actual_len={}; opt_segs=({:?})",
+                msg, expected_len, actual_len, opt_segs
             );
         }
     }
