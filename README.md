@@ -68,3 +68,7 @@ Generates this output (looks better in terminal):
    ▀▀▀▀▀▀▀ ▀▀  ▀   ▀  ▀    
                            
 ```
+
+## Minimum Supported Rust Version (MSRV)
+
+Current MSRV is 1.48.0
