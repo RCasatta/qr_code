@@ -250,12 +250,13 @@ impl<'a> Iterator for QrCodeIterator<'a> {
     }
 }
 
-#[cfg(all(feature = "bmp", feature = "decode"))]
 #[cfg(test)]
 mod tests {
+    use super::{EcLevel, QrCode, Version};
 
+    #[cfg(all(feature = "bmp", feature = "decode"))]
     #[test]
-    fn test_rt() {
+    fn test_roundtrip() {
         use crate::decode::BmpDecode;
         use crate::QrCode;
         use bmp_monochrome::Bmp;
@@ -282,5 +283,35 @@ mod tests {
         let result = bmp.normalize().decode().unwrap();
         let decoded = std::str::from_utf8(&result).unwrap();
         assert_eq!(rand_string, decoded);
+    }
+
+    #[test]
+    fn test_with_version() {
+        let qr_code = QrCode::with_version(b"test", Version::Normal(1), EcLevel::H).unwrap();
+
+        assert_eq!(qr_code.version(), Version::Normal(1));
+        assert_eq!(qr_code.error_correction_level(), EcLevel::H);
+
+        // Only a smoke test of `QrCode::max_allowed_errors` - more thorough test coverage is
+        // provided by the tests in the `ec.rs` module.
+        assert_eq!(qr_code.max_allowed_errors(), 8);
+    }
+
+    #[test]
+    fn test_equivalence_of_pixel_accessors() {
+        let qr_code = QrCode::new(b"test").unwrap();
+
+        let output_via_iter = qr_code.iter().collect::<Vec<_>>();
+        let output_via_to_vec = qr_code.to_vec();
+
+        let mut output_via_index = vec![];
+        for y in 0..qr_code.width() {
+            for x in 0..qr_code.width() {
+                output_via_index.push(qr_code[(x, y)].select(true, false));
+            }
+        }
+
+        assert_eq!(output_via_iter.as_slice(), output_via_to_vec.as_slice());
+        assert_eq!(output_via_iter.as_slice(), output_via_index.as_slice());
     }
 }
