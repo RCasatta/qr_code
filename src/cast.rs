@@ -16,9 +16,7 @@ impl Truncate for u16 {
 pub trait As {
     fn as_u16(self) -> u16;
     fn as_i16(self) -> i16;
-    fn as_u32(self) -> u32;
     fn as_usize(self) -> usize;
-    fn as_isize(self) -> isize;
 }
 
 macro_rules! impl_as {
@@ -33,15 +31,7 @@ macro_rules! impl_as {
                 self.try_into().unwrap()
             }
 
-            fn as_u32(self) -> u32 {
-                self.try_into().unwrap()
-            }
-
             fn as_usize(self) -> usize {
-                self.try_into().unwrap()
-            }
-
-            fn as_isize(self) -> isize {
                 self.try_into().unwrap()
             }
         }
@@ -54,14 +44,8 @@ macro_rules! impl_as {
             fn as_i16(self) -> i16 {
                 self as i16
             }
-            fn as_u32(self) -> u32 {
-                self as u32
-            }
             fn as_usize(self) -> usize {
                 self as usize
-            }
-            fn as_isize(self) -> isize {
-                self as isize
             }
         }
     };
@@ -70,4 +54,3 @@ macro_rules! impl_as {
 impl_as!(i16);
 impl_as!(u32);
 impl_as!(usize);
-impl_as!(isize);
