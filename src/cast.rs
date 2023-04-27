@@ -1,5 +1,4 @@
 use std::convert::TryInto;
-use std::fmt::Display;
 
 // TODO remove this, use try_into wher as_* is used
 
@@ -20,21 +19,6 @@ pub trait As {
     fn as_u32(self) -> u32;
     fn as_usize(self) -> usize;
     fn as_isize(self) -> isize;
-}
-
-trait ExpectOrOverflow {
-    type Output;
-    fn expect_or_overflow<D: Display>(self, value: D, ty: &str) -> Self::Output;
-}
-
-impl<T> ExpectOrOverflow for Option<T> {
-    type Output = T;
-    fn expect_or_overflow<D: Display>(self, value: D, ty: &str) -> Self::Output {
-        match self {
-            Some(v) => v,
-            None => panic!("{} overflows {}", value, ty),
-        }
-    }
 }
 
 macro_rules! impl_as {
