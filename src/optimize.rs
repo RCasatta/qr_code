@@ -1,5 +1,6 @@
 //! Find the optimal data mode sequence to encode a piece of data.
 use crate::types::{Mode, Version};
+use std::borrow::Borrow;
 use std::slice::Iter;
 
 //------------------------------------------------------------------------------
@@ -453,8 +454,15 @@ impl<I: Iterator<Item = Segment>> Iterator for Optimizer<I> {
 }
 
 /// Computes the total encoded length of all segments.
-pub fn total_encoded_len(segments: &[Segment], version: Version) -> usize {
-    segments.iter().map(|seg| seg.encoded_len(version)).sum()
+pub fn total_encoded_len<I>(segments: I, version: Version) -> usize
+where
+    I: IntoIterator,
+    I::Item: Borrow<Segment>,
+{
+    segments
+        .into_iter()
+        .map(|seg| seg.borrow().encoded_len(version))
+        .sum()
 }
 
 #[cfg(test)]
