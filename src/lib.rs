@@ -262,12 +262,13 @@ impl<'a> Iterator for QrCodeIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::{EcLevel, QrCode, Version};
+    use crate::types::QrError;
+    use std::time::{Duration, Instant};
 
     #[cfg(all(feature = "bmp", feature = "decode"))]
     #[test]
     fn test_roundtrip() {
         use crate::decode::BmpDecode;
-        use crate::QrCode;
         use bmp_monochrome::Bmp;
         use rand::distributions::Alphanumeric;
         use rand::Rng;
@@ -322,6 +323,25 @@ mod tests {
 
         assert_eq!(output_via_iter.as_slice(), output_via_to_vec.as_slice());
         assert_eq!(output_via_iter.as_slice(), output_via_index.as_slice());
+    }
+
+    #[test]
+    fn test_very_large_input() {
+        let start = Instant::now();
+
+        const TARGET_LEN: usize = 50 * 1024 * 1024;
+        let data = std::iter::repeat(())
+            .flat_map(|_| {
+                include_bytes!("../test_data/large_base64.in")
+                    .iter()
+                    .copied()
+            })
+            .take(TARGET_LEN)
+            .collect::<Vec<_>>();
+        let err = QrCode::new(&*data).unwrap_err();
+        assert_eq!(err, QrError::DataTooLong);
+
+        assert!(start.elapsed() < Duration::from_secs(10));
     }
 }
 
