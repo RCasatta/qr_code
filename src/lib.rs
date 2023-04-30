@@ -264,12 +264,13 @@ impl<'a> Iterator for QrCodeIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::{EcLevel, QrCode, Version};
+    use crate::types::QrError;
+    use std::time::{Duration, Instant};
 
     #[cfg(all(feature = "bmp", feature = "decode"))]
     #[test]
     fn test_roundtrip() {
         use crate::decode::BmpDecode;
-        use crate::QrCode;
         use bmp_monochrome::Bmp;
         use rand::distributions::Alphanumeric;
         use rand::Rng;
@@ -324,6 +325,32 @@ mod tests {
 
         assert_eq!(output_via_iter.as_slice(), output_via_to_vec.as_slice());
         assert_eq!(output_via_iter.as_slice(), output_via_index.as_slice());
+    }
+
+    #[test]
+    fn test_very_large_input() {
+        let start = Instant::now();
+
+        let input = {
+            // It is important that `data` doesn't decompose into single `Segment`,
+            // because this wouldn't sufficiently stress the performance of
+            // `Parser::new` or `optimize_segmentation`.  In particular, using
+            // `vec![0; TARGET_LEN]` wouldn't be sufficient to demonstrate the
+            // problem (at least not at the fairly low 10MB `TARGET_LEN`).
+            let stencil = include_bytes!("../test_data/large_base64.in");
+
+            const TARGET_LEN: usize = 10 * 1024 * 1024;
+            let data = stencil.repeat(TARGET_LEN / stencil.len() + 1);
+            assert!(data.len() >= TARGET_LEN);
+            data
+        };
+
+        let err = QrCode::new(&*input).unwrap_err();
+        assert_eq!(err, QrError::DataTooLong);
+
+        // This assertion is probably the most important part of the test - input
+        // that doesn't fit should only take O(1) to reject.
+        assert!(start.elapsed() < Duration::from_secs(1));
     }
 }
 

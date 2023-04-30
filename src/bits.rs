@@ -1004,20 +1004,32 @@ mod encode_tests {
 /// Returns `Err(QrError::DataTooLong)` if the data is too long to fit even the
 /// highest QR code version.
 pub fn encode_auto(data: &[u8], ec_level: EcLevel) -> QrResult<Bits> {
-    let segments = Parser::new(data).collect::<Vec<Segment>>();
+    let mut segments = None;
     for version in &[Version::Normal(9), Version::Normal(26), Version::Normal(40)] {
-        let opt_segments = optimize_segmentation(&segments, *version);
-        let total_len = total_encoded_len(&*opt_segments, *version);
         let data_capacity = version
             .fetch(ec_level, &DATA_LENGTHS)
             .expect("invalid DATA_LENGTHS");
-        if total_len <= data_capacity {
-            let min_version = find_min_version(total_len, ec_level);
-            let mut bits = Bits::new(min_version);
-            bits.reserve(total_len);
-            bits.push_segments(data, opt_segments.into_iter())?;
-            bits.push_terminator(ec_level)?;
-            return Ok(bits);
+        let best_case_len = {
+            let only_digits = Segment {
+                mode: Mode::Numeric,
+                begin: 0,
+                end: data.len(),
+            };
+            only_digits.encoded_len(*version)
+        };
+        if best_case_len <= data_capacity {
+            let segments =
+                segments.get_or_insert_with(|| Parser::new(data).collect::<Vec<Segment>>());
+            let opt_segments = optimize_segmentation(segments.as_slice(), *version);
+            let total_len = total_encoded_len(&*opt_segments, *version);
+            if total_len <= data_capacity {
+                let min_version = find_min_version(total_len, ec_level);
+                let mut bits = Bits::new(min_version);
+                bits.reserve(total_len);
+                bits.push_segments(data, opt_segments.into_iter())?;
+                bits.push_terminator(ec_level)?;
+                return Ok(bits);
+            }
         }
     }
     Err(QrError::DataTooLong)
