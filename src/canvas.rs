@@ -1846,15 +1846,15 @@ impl Canvas {
         let mut total_score = 0;
 
         for i in 0..self.width {
-            for j in 0..self.width - 6 {
-                // TODO a ref to a closure should be enough?
-                let get: Box<dyn Fn(i16) -> Color> = if is_horizontal {
-                    Box::new(|k| self.get(k, i).into())
+            let get = |k| -> Color {
+                if is_horizontal {
+                    self.get(k, i).into()
                 } else {
-                    Box::new(|k| self.get(i, k).into())
-                };
-
-                if (j..(j + 7)).map(&*get).ne(PATTERN.iter().cloned()) {
+                    self.get(i, k).into()
+                }
+            };
+            for j in 0..self.width - 6 {
+                if (j..(j + 7)).map(get).ne(PATTERN.iter().cloned()) {
                     continue;
                 }
 
