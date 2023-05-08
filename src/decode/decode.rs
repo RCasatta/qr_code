@@ -157,6 +157,46 @@ where
     Ok(())
 }
 
+#[cfg(test)]
+pub(crate) fn decode_payload_to_segments(
+    meta: &MetaData,
+    mut ds: CorrectedDataStream,
+) -> Vec<crate::optimize::Segment> {
+    use crate::types::Mode;
+
+    let mut writer = std::io::Cursor::new(vec![]);
+    let mut segments = vec![];
+
+    while ds.bits_remaining() >= 4 {
+        let ty = ds.take_bits(4);
+        let begin = writer.position() as usize;
+        let mode = match ty {
+            0 => return segments,
+            1 => {
+                decode_numeric(meta, &mut ds, &mut writer).unwrap();
+                Mode::Numeric
+            }
+            2 => {
+                decode_alpha(meta, &mut ds, &mut writer).unwrap();
+                Mode::Alphanumeric
+            }
+            4 => {
+                decode_byte(meta, &mut ds, &mut writer).unwrap();
+                Mode::Byte
+            }
+            8 => {
+                decode_kanji(meta, &mut ds, &mut writer).unwrap();
+                Mode::Kanji
+            }
+            _ => panic!(""),
+        };
+        let end = writer.position() as usize;
+        let segment = crate::optimize::Segment { mode, begin, end };
+        segments.push(segment);
+    }
+    segments
+}
+
 fn decode_eci<W>(_meta: &MetaData, ds: &mut CorrectedDataStream, mut _writer: W) -> DeQRResult<()>
 where
     W: Write,

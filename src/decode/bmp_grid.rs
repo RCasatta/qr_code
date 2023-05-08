@@ -36,7 +36,8 @@ impl BmpDecode for bmp_monochrome::Bmp {
 #[cfg(test)]
 mod tests {
     use crate::decode::decode::{
-        codestream_ecc, decode_payload, read_data, read_format, MetaData, Version,
+        codestream_ecc, decode_payload, decode_payload_to_segments, read_data, read_format,
+        MetaData, Version,
     };
     use crate::decode::BitGrid;
     use bmp_monochrome::Bmp;
@@ -57,7 +58,10 @@ mod tests {
         let raw = read_data(&bmp, &meta);
         let stream = codestream_ecc(&meta, raw).unwrap();
         let mut writer = Cursor::new(vec![]);
-        decode_payload(&meta, stream, &mut writer).unwrap();
+        decode_payload(&meta, stream.clone(), &mut writer).unwrap();
+        let segments = decode_payload_to_segments(&meta, stream.clone());
+        println!("segments {:?}", segments);
+
         let out = String::from_utf8(writer.into_inner()).unwrap();
         assert_eq!("Hello", &out);
     }

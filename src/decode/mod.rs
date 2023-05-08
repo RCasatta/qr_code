@@ -5,6 +5,11 @@ pub use crate::decode::bmp_grid::BmpDecode;
 use std::error::Error;
 use std::io::Write;
 
+#[cfg(test)]
+pub(crate) use self::decode::{
+    codestream_ecc, decode_payload, decode_payload_to_segments, read_data, read_format,
+};
+
 mod bmp_grid;
 mod decode;
 mod version_db;

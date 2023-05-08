@@ -1141,6 +1141,194 @@ mod optimize_tests {
             Version::Micro(3),
         );
     }
+
+    #[cfg(all(feature = "bmp", feature = "decode"))]
+    #[test]
+    fn test_bitcoin_qr() {
+        use crate::types::Mode::*;
+        use crate::{decode, optimize::Parser};
+        use bmp_monochrome::Bmp;
+        use std::{fs::File, io::Cursor};
+
+        fn test(
+            file: &str,
+            qr_encoded_len: usize,
+            my_encoded_len: usize,
+            version: usize,
+
+            expected: &str,
+            exp_segments: Vec<Segment>,
+        ) {
+            let initial = Bmp::read(File::open(file).unwrap()).unwrap();
+            let bmp = initial.normalize();
+            //println!("{}", bmp.display());
+            let meta = decode::read_format(&&bmp).unwrap();
+            assert_eq!(meta.version, decode::Version(version));
+
+            let raw = decode::read_data(&&bmp, &meta);
+            let stream = decode::codestream_ecc(&meta, raw).unwrap();
+            let mut writer = Cursor::new(vec![]);
+            decode::decode_payload(&meta, stream.clone(), &mut writer).unwrap();
+            let v = crate::types::Version::Normal(version as i16);
+
+            let segments = decode::decode_payload_to_segments(&meta, stream.clone());
+            assert_eq!(segments, exp_segments);
+            // println!("segments qr ({}) {:?}",crate::optimize::total_encoded_len(&segments, v), segments);
+
+            let out = String::from_utf8(writer.into_inner()).unwrap();
+            assert_eq!(expected, &out);
+
+            let segments_pre_optimize = Parser::new(expected.as_bytes()).collect::<Vec<_>>();
+            // println!("segments pre optimize {:?}", segments_pre_optimize);
+
+            let opt_segs: Vec<Segment> = optimize_segmentation(&segments_pre_optimize, v);
+
+            assert_eq!(total_encoded_len(&segments, v), qr_encoded_len);
+            assert_eq!(total_encoded_len(&opt_segs, v), my_encoded_len);
+        }
+
+        let expected = "bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday";
+        test(
+            "test_data/bitcoinqr.dev/qr-bip21-on-chain.bmp",
+            1034,
+            1034,
+            8,
+            expected,
+            vec![
+                Segment {
+                    mode: Byte,
+                    begin: 0,
+                    end: 7,
+                },
+                Segment {
+                    mode: Alphanumeric,
+                    begin: 7,
+                    end: 50,
+                },
+                Segment {
+                    mode: Byte,
+                    begin: 50,
+                    end: 138,
+                },
+            ],
+        );
+        let expected = "LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6";
+        test(
+            "test_data/bitcoinqr.dev/qr-bolt11.bmp",
+            1676,
+            1676,
+            10,
+            expected,
+            vec![Segment {
+                mode: Alphanumeric,
+                begin: 0,
+                end: 302,
+            }],
+        );
+        let expected ="bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday&lightning=LNO1PG257ENXV4EZQCNEYPE82UM50YNHXGRWDAJX283QFWDPL28QQMC78YMLVHMXCSYWDK5WRJNJ36JRYG488QWLRNZYJCZS";
+        test(
+            "test_data/bitcoinqr.dev/qr-bip21-bolt12.bmp",
+            1683,
+            1683,
+            10,
+            expected,
+            vec![
+                Segment {
+                    mode: Byte,
+                    begin: 0,
+                    end: 7,
+                },
+                Segment {
+                    mode: Alphanumeric,
+                    begin: 7,
+                    end: 50,
+                },
+                Segment {
+                    mode: Byte,
+                    begin: 50,
+                    end: 149,
+                },
+                Segment {
+                    mode: Alphanumeric,
+                    begin: 149,
+                    end: 245,
+                },
+            ],
+        );
+        let expected ="bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday&lightning=LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6";
+        test(
+            "test_data/bitcoinqr.dev/qr-bip21-bolt11.bmp",
+            2816,
+            2816,
+            14,
+            expected,
+            vec![
+                Segment {
+                    mode: Byte,
+                    begin: 0,
+                    end: 7,
+                },
+                Segment {
+                    mode: Alphanumeric,
+                    begin: 7,
+                    end: 50,
+                },
+                Segment {
+                    mode: Byte,
+                    begin: 50,
+                    end: 149,
+                },
+                Segment {
+                    mode: Alphanumeric,
+                    begin: 149,
+                    end: 451,
+                },
+            ],
+        );
+        test(
+            "test_data/blockstream-green/qr-bip21-amount-iphone.bmp",
+            469,
+            469,
+            5,
+            "bitcoin:3BQS2BeK8ysQxhzhLrBe4v2mjwk9HdSG5w?amount=0.00100000",
+            vec![
+                Segment {
+                    mode: Byte,
+                    begin: 0,
+                    end: 52,
+                },
+                Segment {
+                    mode: Numeric,
+                    begin: 52,
+                    end: 60,
+                },
+            ],
+        );
+        test(
+            "test_data/blockstream-green/qr-bip21-amount-android.bmp",
+            540,
+            526,
+            5,
+            "bitcoin:tb1qentr8xv3zefggydaednf99aqfvd98hzw4kuwwq?amount=0.526856",
+            vec![Segment {
+                mode: Byte,
+                begin: 0,
+                end: 66,
+            }],
+        );
+        test(
+            "test_data/fbbe.info/segwit-address.bmp",
+            288,
+            288,
+            3,
+            "BITCOIN:TB1QENTR8XV3ZEFGGYDAEDNF99AQFVD98HZW4KUWWQ",
+            vec![Segment {
+                mode: Alphanumeric,
+                begin: 0,
+                end: 50,
+            }],
+        );
+    }
 }
 
 #[cfg(bench)]
