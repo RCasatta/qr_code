@@ -29,7 +29,9 @@
 extern crate test;
 
 // Re-exported dependencies.
+
 #[cfg(feature = "bmp")]
+/// Allows to create QR codes images using monocrhomatic bitmaps
 pub extern crate bmp_monochrome;
 
 use std::ops::Index;
