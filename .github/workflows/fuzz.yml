@@ -1,6 +1,10 @@
 name: Fuzz
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
 
 jobs:
 
@@ -10,8 +14,8 @@ jobs:
       matrix:
         target: [decode_check, encode, split_merge_rt]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         id: cache-fuzz
         with:
           path: |
@@ -19,12 +23,7 @@ jobs:
             fuzz/target
             target
           key: cache-${{ matrix.target }}-${{ hashFiles('**/Cargo.toml','**/Cargo.lock') }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-          profile: minimal
+      - uses: dtolnay/rust-toolchain@nightly
       - run: cargo install cargo-fuzz
         if: steps.cache-fuzz.outputs.cache-hit != 'true'
-      - name: fuzz
-        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=60
+      - run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=60

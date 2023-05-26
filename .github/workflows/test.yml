@@ -1,6 +1,10 @@
 name: Test and lint
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
 
 jobs:
 
@@ -11,40 +15,21 @@ jobs:
         rust: [stable, nightly, 1.48.0]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args:  --verbose --all --all-features
-        if: ${{ matrix.rust != '1.34.0' }}  # arbitrary 0.4.7 not supported
-      - uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args:  --example encode_string
-      - uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args:  --example encode_bmp --features bmp
-      - uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args:  --example decode_bmp --features bmp,decode
+      - run: cargo test --all --all-features
+      - run: cargo run --example encode_string
+      - run: cargo run --example encode_bmp --features bmp
+      - run: cargo run --example decode_bmp --features bmp,decode
 
   cosmetics:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
-          profile: minimal
           components: rustfmt, clippy
-      - name: fmt
-        run: cargo fmt -- --check
-      - name: clippy
-        run: cargo clippy -- -D warnings
+      - run: cargo fmt -- --check
+      - run: cargo clippy -- -D warnings
