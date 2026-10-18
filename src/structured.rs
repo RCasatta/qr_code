@@ -130,7 +130,7 @@ impl TryFrom<Vec<u8>> for StructuredQr {
             return Err(Structured(StructuredWrongEnc));
         }
 
-        let (length, from) = if value.len() < u8::max_value() as usize + 4 {
+        let (length, from) = if value.len() < u8::MAX as usize + 4 {
             // 4 is header size, TODO recheck boundary
             (value[3] as u16, 4usize)
         } else {
