@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        target: [decode_check, encode, split_merge_rt]
+        target: [decode_check, decode_grid, encode, split_merge_rt]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/cache@v5
