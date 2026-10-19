@@ -18,14 +18,14 @@ const MAX_PAYLOAD_SIZE: usize = 8896;
 pub struct Version(pub usize);
 
 impl Version {
-    /// Given the grid size, determine the likely grid size
+    /// Determine the QR version from an exact grid size.
     pub fn from_size(b: usize) -> DeQRResult<Self> {
         let computed_version = b.saturating_sub(17) / 4;
 
-        if computed_version > 0 && computed_version <= 40 {
+        if (21..=177).contains(&b) && (b - 17) % 4 == 0 {
             Ok(Version(computed_version))
         } else {
-            Err(DeQRError::InvalidVersion)
+            Err(DeQRError::InvalidGridSize)
         }
     }
 
@@ -679,6 +679,7 @@ fn correct_format(mut word: u16) -> DeQRResult<u16> {
 }
 
 pub(crate) fn read_format(code: &dyn BitGrid) -> DeQRResult<MetaData> {
+    let version = Version::from_size(code.size())?;
     let mut format = 0;
 
     // Try first location
@@ -705,13 +706,64 @@ pub(crate) fn read_format(code: &dyn BitGrid) -> DeQRResult<MetaData> {
     let fdata = verified_format >> 10;
     let ecc_level = fdata >> 3;
     let mask = fdata & 7;
-    let version = Version::from_size(code.size())?;
-
     Ok(MetaData {
         version,
         ecc_level,
         mask,
     })
+}
+
+#[cfg(test)]
+mod malformed_grid_tests {
+    use super::*;
+
+    struct InvalidGrid(usize);
+
+    impl BitGrid for InvalidGrid {
+        fn size(&self) -> usize {
+            self.0
+        }
+
+        fn bit(&self, _: usize, _: usize) -> bool {
+            panic!("invalid dimensions must be rejected before reading cells")
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_sizes_before_reading_cells() {
+        for version in 1..=40 {
+            assert_eq!(
+                Version::from_size(Version(version).to_size()),
+                Ok(Version(version))
+            );
+        }
+
+        for size in [0, 1, 20, 22, 176, 178, usize::MAX] {
+            assert_eq!(
+                decode(&InvalidGrid(size), Vec::new()),
+                Err(DeQRError::InvalidGridSize)
+            );
+        }
+    }
+
+    #[test]
+    fn arbitrary_grids_do_not_panic() {
+        for version in [1, 2, 7, 20, 40] {
+            let size = Version(version).to_size();
+            for seed in 0_u32..8 {
+                let grid = crate::decode::SimpleGrid::from_func(size, |x, y| {
+                    let index = (y * size + x) as u32;
+                    index
+                        .wrapping_mul(1_664_525)
+                        .wrapping_add(seed.wrapping_mul(1_013_904_223))
+                        .count_ones()
+                        % 2
+                        == 0
+                });
+                let _ = decode(&grid, Vec::new());
+            }
+        }
+    }
 }
 /* ***********************************************************************
  * Format value error correction
