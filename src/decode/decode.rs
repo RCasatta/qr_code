@@ -406,6 +406,9 @@ fn correct_block(block: &mut [u8], ecc: &RSParameters) -> DeQRResult<()> {
         let xinv = GF256::GENERATOR.pow(255 - i);
         if poly_eval(&sigma, xinv) == GF256::ZERO {
             let sd_x = poly_eval(&sigma_deriv, xinv);
+            if sd_x == GF256::ZERO {
+                return Err(DeQRError::DataEcc);
+            }
             let omega_x = poly_eval(&omega, xinv);
             let error = omega_x / sd_x;
             block[ecc.bs - i - 1] = (GF256(block[ecc.bs - i - 1]) + error).0;
@@ -763,6 +766,22 @@ mod malformed_grid_tests {
                 let _ = decode(&grid, Vec::new());
             }
         }
+    }
+
+    #[test]
+    fn uncorrectable_grid_returns_error_instead_of_dividing_by_zero() {
+        let data = [
+            0x7f, 0xde, 0x3f, 0x3e, 0x08, 0x0a, 0x76, 0xa2, 0xdd, 0x54, 0x32, 0xdb, 0x35, 0x75,
+            0xff, 0x9f, 0x4a, 0x0b, 0x2a, 0x7c, 0x08, 0x0a, 0x54, 0xae, 0x76, 0xdd, 0xa2, 0xdb,
+            0x35, 0x75, 0xff, 0x9f, 0x4a, 0x0b, 0xa2, 0xdb, 0x07, 0x28, 0x00, 0x7d, 0xca, 0x07,
+            0x21, 0xcf, 0x2a, 0x7c, 0x5d, 0x29, 0x91, 0x5d, 0x29, 0x91, 0x24,
+        ];
+        let grid = crate::decode::SimpleGrid::from_func(21, |x, y| {
+            let index = y * 21 + x;
+            data.get(index / 8)
+                .is_some_and(|byte| byte & (1 << (index % 8)) != 0)
+        });
+        assert_eq!(decode(&grid, Vec::new()), Err(DeQRError::DataEcc));
     }
 }
 /* ***********************************************************************
