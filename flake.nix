@@ -9,7 +9,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [ cargo rustc clippy rustfmt ];
+        packages = with pkgs; [ cargo rustc clippy rustfmt cargo-fuzz ];
       };
     };
 }
