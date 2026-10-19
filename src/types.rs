@@ -27,7 +27,7 @@ pub enum QrError {
     /// A character not belonging to the character set is found.
     InvalidCharacter,
 
-    ///
+    /// An error while handling structured append QR codes.
     Structured(StructuredQrError),
 }
 
@@ -260,8 +260,8 @@ impl Mode {
     /// i.e. half the total size of bytes.
     pub fn data_bits_count(self, raw_data_len: usize) -> usize {
         match self {
-            Mode::Numeric => (raw_data_len * 10 + 2) / 3,
-            Mode::Alphanumeric => (raw_data_len * 11 + 1) / 2,
+            Mode::Numeric => (raw_data_len * 10).div_ceil(3),
+            Mode::Alphanumeric => (raw_data_len * 11).div_ceil(2),
             Mode::Byte => raw_data_len * 8,
             Mode::Kanji => raw_data_len * 13,
         }

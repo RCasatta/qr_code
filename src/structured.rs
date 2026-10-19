@@ -83,7 +83,7 @@ pub fn merge_qrs(mut bytes: Vec<Vec<u8>>) -> QrResult<Vec<u8>> {
         return Err(Structured(MissingParts));
     }
 
-    vec_structured.sort_by(|a, b| a.seq.cmp(&b.seq)); // allows to merge out of order by reordering here
+    vec_structured.sort_by_key(|q| q.seq); // allows to merge out of order by reordering here
     let result: Vec<u8> = vec_structured
         .iter()
         .flat_map(|q| q.content.clone())
