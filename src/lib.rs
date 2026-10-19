@@ -269,15 +269,10 @@ mod tests {
     fn test_roundtrip() {
         use crate::decode::BmpDecode;
         use bmp_monochrome::Bmp;
-        use rand::distributions::Alphanumeric;
-        use rand::Rng;
         use std::io::Cursor;
 
-        let rand_string: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(30)
-            .collect();
-        let qr_code = QrCode::new(rand_string.as_bytes()).unwrap();
+        let input = b"A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5";
+        let qr_code = QrCode::new(input).unwrap();
         let mut cursor = Cursor::new(vec![]);
         qr_code
             .to_bmp()
@@ -291,7 +286,7 @@ mod tests {
         let bmp = Bmp::read(cursor).unwrap();
         let result = bmp.normalize().decode().unwrap();
         let decoded = std::str::from_utf8(&result).unwrap();
-        assert_eq!(rand_string, decoded);
+        assert_eq!(input, decoded.as_bytes());
     }
 
     #[test]
