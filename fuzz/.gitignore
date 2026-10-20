@@ -4,4 +4,5 @@ corpus/*
 !corpus/decode_grid/
 corpus/decode_grid/*
 !corpus/decode_grid/dc5ef75b2a08f83c0bb4c72e3e9213dd8cf57ae9
+!corpus/decode_grid/seed-*
 artifacts
