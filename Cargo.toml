@@ -4,6 +4,7 @@ description = "QR code encoder in Rust, support structured append (data in multi
 license = "MIT OR Apache-2.0"
 version = "2.0.0"
 edition = "2018"
+rust-version = "1.74.0"
 authors = ["kennytm <kennytm@gmail.com>", "Riccardo Casatta <riccardo.casatta@gmail.com>"]
 keywords = ["qrcode"]
 repository = "https://github.com/RCasatta/qr_code"
@@ -19,13 +20,15 @@ g2p = { version = "0.4", default-features = false, optional = true }
 arbitrary = { version = "0.4.7", default-features = false, optional = true, features = ["derive"]}
 
 [dev-dependencies]
-rand = "0.7.3"
 hex = "0.4.2"
 
 [features]
 bmp = ["bmp-monochrome"]
 decode = ["g2p"]
 fuzz = ["arbitrary"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(bench)', 'cfg(fuzzing)'] }
 
 [[example]]
 name = "encode_string"

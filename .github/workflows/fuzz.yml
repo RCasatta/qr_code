@@ -9,13 +9,13 @@ on:
 jobs:
 
   fuzz:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        target: [decode_check, encode, split_merge_rt]
+        target: [decode_check, decode_grid, encode, split_merge_rt]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v5
         id: cache-fuzz
         with:
           path: |

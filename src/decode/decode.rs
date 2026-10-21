@@ -18,14 +18,14 @@ const MAX_PAYLOAD_SIZE: usize = 8896;
 pub struct Version(pub usize);
 
 impl Version {
-    /// Given the grid size, determine the likely grid size
+    /// Determine the QR version from an exact grid size.
     pub fn from_size(b: usize) -> DeQRResult<Self> {
         let computed_version = b.saturating_sub(17) / 4;
 
-        if computed_version > 0 && computed_version <= 40 {
+        if (21..=177).contains(&b) && (b - 17) % 4 == 0 {
             Ok(Version(computed_version))
         } else {
-            Err(DeQRError::InvalidVersion)
+            Err(DeQRError::InvalidGridSize)
         }
     }
 
@@ -108,14 +108,6 @@ impl CorrectedDataStream {
 /* ***********************************************************************
  * Decoder algorithm
  */
-#[derive(Copy, Clone)]
-pub struct DataStream {
-    pub raw: [u8; MAX_PAYLOAD_SIZE],
-    pub data_bits: usize,
-    pub ptr: usize,
-    pub data: [u8; MAX_PAYLOAD_SIZE],
-}
-
 /// Given a grid try to decode and write it to the output writer
 ///
 /// This tries to read the bit patterns from a [Grid](trait.Grid.html), correct errors
@@ -414,6 +406,9 @@ fn correct_block(block: &mut [u8], ecc: &RSParameters) -> DeQRResult<()> {
         let xinv = GF256::GENERATOR.pow(255 - i);
         if poly_eval(&sigma, xinv) == GF256::ZERO {
             let sd_x = poly_eval(&sigma_deriv, xinv);
+            if sd_x == GF256::ZERO {
+                return Err(DeQRError::DataEcc);
+            }
             let omega_x = poly_eval(&omega, xinv);
             let error = omega_x / sd_x;
             block[ecc.bs - i - 1] = (GF256(block[ecc.bs - i - 1]) + error).0;
@@ -687,6 +682,7 @@ fn correct_format(mut word: u16) -> DeQRResult<u16> {
 }
 
 pub(crate) fn read_format(code: &dyn BitGrid) -> DeQRResult<MetaData> {
+    let version = Version::from_size(code.size())?;
     let mut format = 0;
 
     // Try first location
@@ -713,13 +709,80 @@ pub(crate) fn read_format(code: &dyn BitGrid) -> DeQRResult<MetaData> {
     let fdata = verified_format >> 10;
     let ecc_level = fdata >> 3;
     let mask = fdata & 7;
-    let version = Version::from_size(code.size())?;
-
     Ok(MetaData {
         version,
         ecc_level,
         mask,
     })
+}
+
+#[cfg(test)]
+mod malformed_grid_tests {
+    use super::*;
+
+    struct InvalidGrid(usize);
+
+    impl BitGrid for InvalidGrid {
+        fn size(&self) -> usize {
+            self.0
+        }
+
+        fn bit(&self, _: usize, _: usize) -> bool {
+            panic!("invalid dimensions must be rejected before reading cells")
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_sizes_before_reading_cells() {
+        for version in 1..=40 {
+            assert_eq!(
+                Version::from_size(Version(version).to_size()),
+                Ok(Version(version))
+            );
+        }
+
+        for size in [0, 1, 20, 22, 176, 178, usize::MAX] {
+            assert_eq!(
+                decode(&InvalidGrid(size), Vec::new()),
+                Err(DeQRError::InvalidGridSize)
+            );
+        }
+    }
+
+    #[test]
+    fn arbitrary_grids_do_not_panic() {
+        for version in [1, 2, 7, 20, 40] {
+            let size = Version(version).to_size();
+            for seed in 0_u32..8 {
+                let grid = crate::decode::SimpleGrid::from_func(size, |x, y| {
+                    let index = (y * size + x) as u32;
+                    index
+                        .wrapping_mul(1_664_525)
+                        .wrapping_add(seed.wrapping_mul(1_013_904_223))
+                        .count_ones()
+                        % 2
+                        == 0
+                });
+                let _ = decode(&grid, Vec::new());
+            }
+        }
+    }
+
+    #[test]
+    fn uncorrectable_grid_returns_error_instead_of_dividing_by_zero() {
+        let data = [
+            0x7f, 0xde, 0x3f, 0x3e, 0x08, 0x0a, 0x76, 0xa2, 0xdd, 0x54, 0x32, 0xdb, 0x35, 0x75,
+            0xff, 0x9f, 0x4a, 0x0b, 0x2a, 0x7c, 0x08, 0x0a, 0x54, 0xae, 0x76, 0xdd, 0xa2, 0xdb,
+            0x35, 0x75, 0xff, 0x9f, 0x4a, 0x0b, 0xa2, 0xdb, 0x07, 0x28, 0x00, 0x7d, 0xca, 0x07,
+            0x21, 0xcf, 0x2a, 0x7c, 0x5d, 0x29, 0x91, 0x5d, 0x29, 0x91, 0x24,
+        ];
+        let grid = crate::decode::SimpleGrid::from_func(21, |x, y| {
+            let index = y * 21 + x;
+            data.get(index / 8)
+                .is_some_and(|byte| byte & (1 << (index % 8)) != 0)
+        });
+        assert_eq!(decode(&grid, Vec::new()), Err(DeQRError::DataEcc));
+    }
 }
 /* ***********************************************************************
  * Format value error correction

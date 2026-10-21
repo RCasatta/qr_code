@@ -18,7 +18,7 @@ impl QrCode {
             .collect();
         line_full.push('\n');
 
-        for _ in 0..(border + 1) / 2 {
+        for _ in 0..border.div_ceil(2) {
             result.push_str(&line_full);
         }
         for i in (0..height).step_by(2) {

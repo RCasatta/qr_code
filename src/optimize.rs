@@ -109,7 +109,7 @@ impl<'a> Parser<'a> {
     ///                                Segment { mode: Numeric, begin: 3, end: 6 },
     ///                                Segment { mode: Byte, begin: 6, end: 10 }]);
     ///
-    pub fn new(data: &[u8]) -> Parser {
+    pub fn new(data: &[u8]) -> Parser<'_> {
         Parser {
             ecs_iter: EcsIter {
                 base: data.iter(),
@@ -138,10 +138,7 @@ impl<'a> Iterator for Parser<'a> {
         }
 
         loop {
-            let (i, ecs) = match self.ecs_iter.next() {
-                None => return None,
-                Some(a) => a,
-            };
+            let (i, ecs) = self.ecs_iter.next()?;
             let (next_state, action) = STATE_TRANSITION[self.state as usize + ecs as usize];
             self.state = next_state;
 

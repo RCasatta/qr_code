@@ -83,7 +83,7 @@ pub fn merge_qrs(mut bytes: Vec<Vec<u8>>) -> QrResult<Vec<u8>> {
         return Err(Structured(MissingParts));
     }
 
-    vec_structured.sort_by(|a, b| a.seq.cmp(&b.seq)); // allows to merge out of order by reordering here
+    vec_structured.sort_by_key(|q| q.seq); // allows to merge out of order by reordering here
     let result: Vec<u8> = vec_structured
         .iter()
         .flat_map(|q| q.content.clone())
@@ -242,7 +242,6 @@ mod tests {
     use crate::structured::StructuredQrError::*;
     use crate::structured::{merge_qrs, SplittedQr, StructuredQr, LEVEL};
     use crate::{QrCode, Version};
-    use rand::Rng;
     use std::convert::TryInto;
 
     // from example https://segno.readthedocs.io/en/stable/structured-append.html#structured-append
@@ -348,12 +347,17 @@ mod tests {
 
     #[test]
     fn test_split_merge_qr() {
-        // consider using https://rust-fuzz.github.io/book/introduction.html
-        let mut rng = rand::thread_rng();
-        let random_bytes: Vec<u8> = (0..4000).map(|_| rand::random::<u8>()).collect();
+        let mut state = 0x4d59_5df4_d0f3_3173_u64;
+        let mut next = || {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
+            (state >> 32) as usize
+        };
+        let random_bytes: Vec<u8> = (0..4000).map(|_| next() as u8).collect();
         for _ in 0..1_000 {
-            let len = rng.gen_range(100, 4000);
-            let ver = rng.gen_range(10, 20);
+            let len = 100 + next() % 3_900;
+            let ver = (10 + next() % 10) as i16;
             let data = random_bytes[0..len].to_vec();
             let split_qr = SplittedQr::new(data.clone(), ver).unwrap();
             let bits = split_qr.split_to_bits().unwrap();
